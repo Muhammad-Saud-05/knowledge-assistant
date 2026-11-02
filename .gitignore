@@ -1,0 +1,9 @@
+# Secrets and local config
+.env
+
+# Python
+__pycache__/
+.venv/
+
+# Node
+node_modules/
