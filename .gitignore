@@ -7,3 +7,6 @@ __pycache__/
 
 # Node
 node_modules/
+
+# Personal sample documents
+data/
