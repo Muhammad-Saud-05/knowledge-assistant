@@ -4,6 +4,7 @@ import hashlib
 import math
 import re
 from collections import Counter
+from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
@@ -16,8 +17,8 @@ PDF_EXTENSIONS = {".pdf"}
 
 # A line must appear on at least this share of pages to count as a header/footer.
 REPEATED_LINE_SHARE = 0.6
-# Only the first and last few lines of a page are checked for headers/footers.
-EDGE_LINES = 3
+# Only text in the top or bottom share of the page height can be a header/footer.
+EDGE_BAND = 0.10
 
 
 def _sha256(data: bytes) -> str:
@@ -137,46 +138,52 @@ def _join_lines(lines: list[str]) -> str:
     return out
 
 
-def _page_blocks(page: pymupdf.Page) -> list[list[str]]:
-    """Text blocks of a page in reading order, each as a list of lines."""
+@dataclass
+class _Block:
+    lines: list[str]
+    at_edge: bool  # inside the top or bottom margin band of the page
+
+
+def _page_blocks(page: pymupdf.Page) -> list[_Block]:
+    """Text blocks of a page in reading order."""
+    height = page.rect.height
     blocks = []
-    for block in page.get_text("blocks", sort=True):
-        if block[6] != 0:  # skip images
+    for x0, y0, x1, y1, text, _, kind in page.get_text("blocks", sort=True):
+        if kind != 0:  # skip images
             continue
-        text = block[4].replace("­", "").replace("\xa0", " ")
+        text = text.replace("­", "").replace("\xa0", " ")
         lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
         if lines:
-            blocks.append(lines)
+            at_edge = y1 <= height * EDGE_BAND or y0 >= height * (1 - EDGE_BAND)
+            blocks.append(_Block(lines, at_edge))
     return blocks
 
 
-def _edge_positions(blocks: list[list[str]]) -> set[tuple[int, int]]:
-    """(block, line) positions among the first/last EDGE_LINES lines of a page."""
-    flat = [(b, i) for b, block in enumerate(blocks) for i in range(len(block))]
-    return set(flat[:EDGE_LINES]) | set(flat[-EDGE_LINES:])
-
-
-def _find_repeated_lines(pages: list[list[list[str]]]) -> set[str]:
-    """Normalised lines that sit at the page edges on most pages."""
+def _find_repeated_lines(pages: list[list[_Block]]) -> set[str]:
+    """Normalised margin lines that appear on most pages."""
     if len(pages) < 3:
         return set()
     counts: Counter[str] = Counter()
     for blocks in pages:
-        keys = {_normalise_line(blocks[b][i]) for b, i in _edge_positions(blocks)}
+        keys = {
+            _normalise_line(line)
+            for block in blocks
+            if block.at_edge
+            for line in block.lines
+        }
         counts.update(keys)
     needed = max(2, math.ceil(REPEATED_LINE_SHARE * len(pages)))
     return {key for key, n in counts.items() if n >= needed}
 
 
-def _clean_page(blocks: list[list[str]], repeated: set[str]) -> list[str]:
+def _clean_page(blocks: list[_Block], repeated: set[str]) -> list[str]:
     """Paragraphs of a page with headers/footers removed."""
-    edges = _edge_positions(blocks)
     paragraphs = []
-    for b, block in enumerate(blocks):
+    for block in blocks:
         kept = [
             line
-            for i, line in enumerate(block)
-            if not ((b, i) in edges and _normalise_line(line) in repeated)
+            for line in block.lines
+            if not (block.at_edge and _normalise_line(line) in repeated)
         ]
         if kept:
             paragraphs.append(_join_lines(kept))
