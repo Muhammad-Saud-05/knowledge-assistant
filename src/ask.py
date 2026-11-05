@@ -6,6 +6,7 @@ Ollama must be running, and documents must already be ingested.
 
 import argparse
 import sys
+import time
 from collections.abc import Iterator
 
 import psycopg
@@ -64,7 +65,7 @@ def _describe(chunk) -> str:
     return text
 
 
-def _print_report(answer: Answer) -> None:
+def _print_report(answer: Answer, model_load_seconds: float) -> None:
     validation = answer.validation
     print("\n")
 
@@ -95,6 +96,10 @@ def _print_report(answer: Answer) -> None:
     first = answer.timings.get("first_token")
     first_text = f"{first:.1f}s" if first is not None else "n/a"
     print(f"\nTime: first token {first_text}, total {answer.timings['total']:.1f}s")
+    print(
+        f"      (retrieval {answer.timings['retrieval']:.1f}s; the embedding model took "
+        f"{model_load_seconds:.1f}s to load, which happens once per run and is not counted above)"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -123,9 +128,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     llm = _PromptWatcher(OllamaLLM(model=args.model), args.show_prompt)
+    embedder = Embedder()
+    # Load the embedding model now, so the timings below measure the question,
+    # not the one-time model load.
+    load_started = time.perf_counter()
+    _ = embedder.model
+    model_load_seconds = time.perf_counter() - load_started
     try:
         with conn:
-            stream = answer_question_stream(args.question, conn, Embedder(), llm, k=args.k)
+            stream = answer_question_stream(args.question, conn, embedder, llm, k=args.k)
             while True:
                 try:
                     print(next(stream), end="", flush=True)
@@ -136,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{error}", file=sys.stderr)
         return 1
 
-    _print_report(answer)
+    _print_report(answer, model_load_seconds)
     return 0
 
 
