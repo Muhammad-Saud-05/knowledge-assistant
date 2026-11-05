@@ -105,3 +105,37 @@ def embedder():
 @pytest.fixture
 def wrong_size_embedder():
     return WrongSizeEmbedder()
+
+
+# ------------------------------------------------------------ data helpers
+
+
+@pytest.fixture
+def add_document(embedder):
+    """Store a document with chunks straight into the test database.
+
+    Each chunk is (text, page_number, section_heading). The stored vector is the
+    fake embedder's vector for the chunk text, so a query worded exactly like a
+    chunk's text finds that chunk with similarity 1.0.
+    """
+    from pgvector import Vector
+
+    def add(conn, title, path, chunks, source_type="markdown"):
+        doc_id = conn.execute(
+            "INSERT INTO documents (source_type, path, title, content_hash) "
+            "VALUES (%s, %s, %s, %s) RETURNING id",
+            (source_type, path, title, "hash-" + path),
+        ).fetchone()[0]
+        chunk_ids = []
+        for index, (text, page, heading) in enumerate(chunks):
+            chunk_ids.append(
+                conn.execute(
+                    "INSERT INTO chunks (document_id, chunk_index, text, section_heading, "
+                    "page_number, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                    (doc_id, index, text, heading, page, Vector(embedder.embed_documents([text])[0])),
+                ).fetchone()[0]
+            )
+        conn.commit()
+        return doc_id, chunk_ids
+
+    return add
