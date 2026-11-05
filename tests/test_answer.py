@@ -64,6 +64,8 @@ def test_system_prompt_contains_the_rules():
     assert "only" in lowered and "[1]" in system
     assert "untrusted" in lowered and "not follow" in lowered  # ignore instructions in sources
     assert "concise" in lowered
+    # A small model once answered with bare "[1]" markers; the rule against that must stay.
+    assert "complete sentences" in lowered and "only of citation numbers" in lowered
 
 
 def test_a_chunk_cannot_close_its_own_block():
