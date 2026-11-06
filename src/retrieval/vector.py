@@ -5,21 +5,9 @@ search and a way to combine strategies next to it, in this package, and reuse
 RetrievedChunk as the common result type.
 """
 
-from dataclasses import dataclass
-
 from pgvector import Vector
 
-
-@dataclass
-class RetrievedChunk:
-    chunk_id: int
-    document_id: int
-    title: str | None
-    path: str
-    page_number: int | None
-    section_heading: str | None
-    text: str
-    score: float  # cosine similarity = 1 - cosine distance (higher is closer)
+from .models import RetrievedChunk  # noqa: F401  (re-exported: existing imports keep working)
 
 
 # <=> is pgvector's cosine distance operator. The question vector is passed as
