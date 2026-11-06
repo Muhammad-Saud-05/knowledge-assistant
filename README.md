@@ -61,13 +61,7 @@ python -m src.ingestion.ingest --delete sample_corpus/study-habits-notes.md  # r
 
 Paths are stored relative to the folder you run the command from, so use the same form with `--delete`.
 
-### Try a search (sanity check only)
-
-```powershell
-python scripts\smoke_search.py "how does a token bucket work"
-```
-
-This embeds the question and prints the 5 nearest chunks with their cosine similarity. It only checks that storage works; real retrieval comes later.
+To look at what was stored, use the search command described in the next section. (`scripts\smoke_search.py` is the older, vector-only throwaway check; `python -m src.search` replaces it.)
 
 ### The embedding model
 
@@ -87,6 +81,32 @@ python -m pytest -m "not slow and not integration"   # fast tests only (no model
 
 The database tests create a temporary `kb_test` database on the same server and drop it afterwards, so your real data is never touched. If Postgres is not running they are skipped. The one `integration` test talks to a real Ollama server and is skipped if Ollama is not running.
 
+## Search
+
+`python -m src.search "your query"` searches the stored documents with no language model, so you can see exactly what would be handed to one. By default it shows all three modes, then a table of where each chunk ranked in each.
+
+| Mode | How it finds chunks | Good at |
+| --- | --- | --- |
+| `vector` | Compares meaning: the query and every chunk are turned into vectors and the nearest are returned. | Paraphrases that share no words with the notes |
+| `keyword` | Full-text match on the words (stemmed, stop words ignored). A chunk matches if it contains *any* of the query's words; chunks with more of them, close together, rank higher. | Exact things: `429`, `Retry-After`, `HEAD~1`, rare names |
+| `hybrid` | Takes the top 30 from each of the two above and merges them (see below), then returns the best few. | Both at once. This is the default for `ask`. |
+
+```powershell
+python -m src.search "HTTP 429 Retry-After"                       # all three modes side by side
+python -m src.search "how do I undo my last commit" --mode hybrid # one mode
+python -m src.search "HNSW index" --type pdf                      # only PDFs (or: --type markdown)
+python -m src.search "rate limiting" --since 2026-10-01           # documents dated on or after
+python -m src.search "rate limiting" --until 2026-09-30           # ... on or before (both are inclusive)
+python -m src.search "git reset" --path-prefix sample_corpus/     # only paths starting with this
+python -m src.search "token bucket" --k 10                        # more results
+```
+
+Each result shows the title, page or heading, its rank in the vector and keyword lists (`-` means that method did not return it), the fused score, and the start of its text. Filters can be combined. Dates use `YYYY-MM-DD`; anything else gives a friendly error. Note that a filter narrows *where* to look but never makes vector search say "nothing relevant": it always returns the nearest chunks it has, even weak ones.
+
+### How hybrid search merges the two lists
+
+Vector similarities (about 0.4 to 0.8) and keyword ranks are on different scales, so adding them would let one method drown out the other. Instead the lists are merged with **reciprocal rank fusion**, which ignores the scores and uses only positions: a chunk earns `1 / (60 + rank)` from each list it appears in, and the sums decide the order. A chunk that both methods rank near the top wins, and a chunk that only one method found can still make the list. For example, a chunk ranked 1st by keyword and 2nd by vector scores `1/61 + 1/62`, about 0.0325, while one found only by vector at rank 1 scores `1/61`, about 0.0164. The fused score only says how high a chunk ranked. It is **not** a similarity and cannot tell you whether anything relevant was found.
+
 ## Asking questions
 
 Ask a question and get an answer that cites your documents:
@@ -100,16 +120,18 @@ Before you start:
 1. The database is running (`docker compose up -d`) and your documents are ingested (see above).
 2. [Ollama](https://ollama.com) is running and has the model: `ollama pull llama3.2:3b`.
 
-The answer streams to the terminal. Afterwards you get a **Sources** list with only the sources the answer actually cited (`[n]`), each with its similarity score and the start of its text, plus plain-words warnings if the answer cites a source that does not exist or has no citations at all. The last lines show the time to the first token, the total time, and how long the embedding model took to load (about 10-20 seconds, once per run).
+The answer streams to the terminal. Afterwards you get a **Sources** list with only the sources the answer actually cited (`[n]`), each with where it was found (its rank in the vector and keyword results) and the start of its text, plus plain-words warnings if the answer cites a source that does not exist or has no citations at all. The last lines show the time to the first token, the total time, and how long the embedding model took to load (about 10-20 seconds, once per run).
 
-If your documents do not contain the answer, the model is told to reply with exactly `I couldn't find this in your documents.` There is no similarity cutoff yet: that decision is left to the model, and will be calibrated later.
+If your documents do not contain the answer, the model is told to reply with exactly `I couldn't find this in your documents.` There is no score cutoff yet: that decision is left to the model, and will be calibrated later.
 
 Options:
 
 ```powershell
 python -m src.ask "your question" --k 8              # retrieve 8 sources instead of 5
+python -m src.ask "your question" --mode vector      # search mode: vector, keyword or hybrid (default)
 python -m src.ask "your question" --model llama3.2:3b # use a different Ollama model
 python -m src.ask "your question" --show-prompt      # print the exact prompt sent to the model
+python -m src.ask "your question" --type pdf --since 2026-10-01 --path-prefix sample_corpus/  # filters, as in search
 ```
 
 A larger `--k` puts more text in the prompt. The context window is set to 4096 tokens, and `ask` warns you if the prompt may not fit (Ollama would otherwise silently cut off the start of the sources).
