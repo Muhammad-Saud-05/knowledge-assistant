@@ -114,17 +114,17 @@ def wrong_size_embedder():
 def add_document(embedder):
     """Store a document with chunks straight into the test database.
 
-    Each chunk is (text, page_number, section_heading). The stored vector is the
+    Each chunk is (text, page_number, section_heading); doc_date is optional. The stored vector is the
     fake embedder's vector for the chunk text, so a query worded exactly like a
     chunk's text finds that chunk with similarity 1.0.
     """
     from pgvector import Vector
 
-    def add(conn, title, path, chunks, source_type="markdown"):
+    def add(conn, title, path, chunks, source_type="markdown", doc_date=None):
         doc_id = conn.execute(
-            "INSERT INTO documents (source_type, path, title, content_hash) "
-            "VALUES (%s, %s, %s, %s) RETURNING id",
-            (source_type, path, title, "hash-" + path),
+            "INSERT INTO documents (source_type, path, title, content_hash, doc_date) "
+            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (source_type, path, title, "hash-" + path, doc_date),
         ).fetchone()[0]
         chunk_ids = []
         for index, (text, page, heading) in enumerate(chunks):
