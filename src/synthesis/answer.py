@@ -9,15 +9,18 @@ import time
 from collections.abc import Generator
 from dataclasses import dataclass, field
 
-from ..retrieval.vector import RetrievedChunk, vector_search
+from ..retrieval.filters import SearchFilters
+from ..retrieval.hybrid import search
+from ..retrieval.models import RetrievedChunk
 
 NOT_FOUND = "I couldn't find this in your documents."
 
 # Note on "not found": the model decides this itself, from the prompt rules.
-# There is deliberately NO similarity cutoff here yet. Raw cosine scores overlap
-# too much on this corpus (unrelated chunks score nearly as high as weakly
-# related ones), so a cutoff on them would be a guess. The "not found" decision
-# will be calibrated later using reranker scores and the evaluation set.
+# There is deliberately NO score cutoff here yet. Raw cosine scores overlap too
+# much on this corpus (unrelated chunks score nearly as high as weakly related
+# ones), and in hybrid mode the score is a fused ranking value, not a similarity
+# at all, so a cutoff on either would be a guess. The "not found" decision will
+# be calibrated later using reranker scores and the evaluation set.
 
 SYSTEM_PROMPT = f"""You answer questions using ONLY the numbered sources given in the user message.
 
@@ -161,7 +164,13 @@ def _finish(
 
 
 def answer_question_stream(
-    question: str, conn, embedder, llm, k: int = 5
+    question: str,
+    conn,
+    embedder,
+    llm,
+    k: int = 5,
+    mode: str = "hybrid",
+    filters: SearchFilters | None = None,
 ) -> Generator[str, None, Answer]:
     """Yield the answer piece by piece; the generator's return value is the Answer.
 
@@ -173,7 +182,7 @@ def answer_question_stream(
             answer = done.value
     """
     started = time.perf_counter()
-    chunks = vector_search(conn, embedder, question, k)
+    chunks = search(conn, embedder, question, k=k, mode=mode, filters=filters)
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:
@@ -192,10 +201,18 @@ def answer_question_stream(
     return _finish(question, chunks, "".join(pieces), started, retrieval_seconds, first_token)
 
 
-def answer_question(question: str, conn, embedder, llm, k: int = 5) -> Answer:
+def answer_question(
+    question: str,
+    conn,
+    embedder,
+    llm,
+    k: int = 5,
+    mode: str = "hybrid",
+    filters: SearchFilters | None = None,
+) -> Answer:
     """Answer in one go (no streaming)."""
     started = time.perf_counter()
-    chunks = vector_search(conn, embedder, question, k)
+    chunks = search(conn, embedder, question, k=k, mode=mode, filters=filters)
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:

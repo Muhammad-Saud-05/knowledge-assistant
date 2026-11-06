@@ -1,6 +1,7 @@
 """Ask a question about your documents and get a cited answer.
 
-Usage: python -m src.ask "how does a token bucket work" [--k 5] [--model NAME] [--show-prompt]
+Usage: python -m src.ask "how does a token bucket work" [--k 5] [--mode hybrid] [--model NAME]
+           [--show-prompt] [--type pdf] [--since YYYY-MM-DD] [--until YYYY-MM-DD] [--path-prefix PREFIX]
 Ollama must be running, and documents must already be ingested.
 """
 
@@ -11,10 +12,12 @@ from collections.abc import Iterator
 
 import psycopg
 
+from .cli_filters import add_filter_arguments, filters_from_args
 from .db.connection import get_connection
 from .ingestion.embedder import Embedder
 from .llm.base import LLMError
 from .llm.ollama import NUM_CTX, OllamaLLM
+from .retrieval.hybrid import MODES
 from .synthesis.answer import Answer, answer_question_stream
 
 SOURCE_PREVIEW_CHARS = 120
@@ -65,7 +68,21 @@ def _describe(chunk) -> str:
     return text
 
 
-def _print_report(answer: Answer, model_load_seconds: float) -> None:
+def _found_by(chunk, mode: str) -> str:
+    """Where a chunk ranked in the search methods that were used."""
+
+    def rank(value: int | None) -> str:
+        return f"#{value}" if value is not None else "-"
+
+    parts = []
+    if mode in ("vector", "hybrid"):
+        parts.append(f"vector {rank(chunk.vector_rank)}")
+    if mode in ("keyword", "hybrid"):
+        parts.append(f"keyword {rank(chunk.keyword_rank)}")
+    return ", ".join(parts)
+
+
+def _print_report(answer: Answer, model_load_seconds: float, mode: str) -> None:
     validation = answer.validation
     print("\n")
 
@@ -76,7 +93,7 @@ def _print_report(answer: Answer, model_load_seconds: float) -> None:
         if answer.cited_chunks:
             for number, chunk in answer.cited_chunks:
                 preview = " ".join(chunk.text.split())[:SOURCE_PREVIEW_CHARS]
-                print(f"[{number}] {_describe(chunk)} - similarity {chunk.score:.3f}")
+                print(f"[{number}] {_describe(chunk)} - found by {_found_by(chunk, mode)}")
                 print(f"    {preview}")
         else:
             print("(none cited)")
@@ -106,15 +123,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Ask a question about your ingested documents.")
     parser.add_argument("question", help="your question, in quotes")
     parser.add_argument("--k", type=int, default=5, help="how many sources to retrieve (default 5)")
+    parser.add_argument(
+        "--mode", choices=MODES, default="hybrid", help="how to search: vector, keyword or hybrid (default)"
+    )
     parser.add_argument("--model", help="Ollama model name (default: OLLAMA_MODEL or llama3.2:3b)")
     parser.add_argument(
         "--show-prompt", action="store_true", help="print the exact prompt sent to the model"
     )
+    add_filter_arguments(parser)
     args = parser.parse_args(argv)
     if args.k < 1:
         parser.error("--k must be at least 1")
     if not args.question.strip():
         parser.error("the question must not be empty")
+    filters = filters_from_args(parser, args)
 
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -136,7 +158,9 @@ def main(argv: list[str] | None = None) -> int:
     model_load_seconds = time.perf_counter() - load_started
     try:
         with conn:
-            stream = answer_question_stream(args.question, conn, embedder, llm, k=args.k)
+            stream = answer_question_stream(
+                args.question, conn, embedder, llm, k=args.k, mode=args.mode, filters=filters
+            )
             while True:
                 try:
                     print(next(stream), end="", flush=True)
@@ -147,7 +171,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{error}", file=sys.stderr)
         return 1
 
-    _print_report(answer, model_load_seconds)
+    _print_report(answer, model_load_seconds, args.mode)
     return 0
 
 
