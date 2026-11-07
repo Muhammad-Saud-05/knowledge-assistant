@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from ..db.pool import create_pool
 from ..ingestion.embedder import Embedder
 from ..llm.ollama import OllamaLLM
+from . import documents, health
 from .config import Settings, load_settings
 from .observability import RequestLogMiddleware, configure_logging, request_id_of
 from .security import install_security
@@ -73,6 +74,9 @@ def create_app(settings: Settings | None = None, with_lifespan: bool = True) -> 
         # Log only the kind of error and the request id, never the request's content.
         logger.error("unhandled error id=%s type=%s", request_id_of(request), type(error).__name__)
         return JSONResponse({"detail": "Something went wrong on the server."}, status_code=500)
+
+    app.include_router(health.router, prefix="/api", tags=["health"])
+    app.include_router(documents.router, prefix="/api", tags=["documents"])
 
     install_security(app, settings)
     # Added last = outermost: every request, even a rejected one, gets an id and a log line.
