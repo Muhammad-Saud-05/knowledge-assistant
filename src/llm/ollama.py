@@ -13,7 +13,7 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-from .base import LLMError, LLMUnavailableError, ModelNotFoundError
+from .base import LLMError, LLMUnavailableError, ModelNotFoundError, ModelStatus
 
 DEFAULT_HOST = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "llama3.2:3b"
@@ -25,6 +25,9 @@ DEFAULT_KEEP_ALIVE = "30m"
 # a long prompt, which would drop sources without any warning. Set it explicitly.
 NUM_CTX = 4096
 TEMPERATURE = 0.1  # low, so answers stick to the sources
+
+# A status check must answer quickly, whatever the main timeout is.
+STATUS_TIMEOUT = 3.0
 
 # Generating on a CPU is slow, so wait a long time for the reply.
 TIMEOUT = httpx.Timeout(connect=10.0, read=600.0, write=30.0, pool=10.0)
@@ -91,6 +94,22 @@ class OllamaLLM:
                 f"Model {self.model!r} is not installed in Ollama. Run: ollama pull {self.model}"
             )
         raise LLMError(f"Ollama returned an error ({response.status_code}): {message or 'no details'}")
+
+    def status(self) -> ModelStatus:
+        """Is Ollama running, and is the configured model installed? Never raises."""
+        try:
+            response = self._client.get(f"{self.host}/api/tags", timeout=STATUS_TIMEOUT)
+            response.raise_for_status()
+            names = [m.get("name", "") for m in response.json().get("models", [])]
+        except httpx.HTTPStatusError:
+            return ModelStatus(False, self.model, None, "Ollama returned an error.")
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return ModelStatus(False, self.model, None, "Ollama isn't running.")
+        # "llama3.2" means "llama3.2:latest" to Ollama.
+        wanted = {self.model, f"{self.model}:latest"}
+        installed = any(name in wanted for name in names)
+        detail = None if installed else f"The model {self.model} isn't installed (run: ollama pull {self.model})."
+        return ModelStatus(True, self.model, installed, detail)
 
     def warm_up(self) -> None:
         """Load the model into memory without generating anything.

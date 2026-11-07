@@ -214,3 +214,43 @@ def test_warm_up_reports_the_same_friendly_errors():
     missing = lambda r: httpx.Response(404, json={"error": "model 'x' not found"})  # noqa: E731
     with pytest.raises(ModelNotFoundError, match="ollama pull"):
         make_llm(missing, model="x").warm_up()
+
+
+# --------------------------------------------------------------------- status
+
+
+def tags(*names):
+    return httpx.Response(200, json={"models": [{"name": n} for n in names]})
+
+
+def test_status_when_the_model_is_installed():
+    status = make_llm(lambda r: tags("other:1b", "llama3.2:3b")).status()
+    assert (status.reachable, status.model_installed, status.detail) == (True, True, None)
+
+
+def test_status_when_the_model_is_missing_says_how_to_install_it():
+    status = make_llm(lambda r: tags("other:1b")).status()
+    assert status.reachable and status.model_installed is False
+    assert "ollama pull llama3.2:3b" in status.detail
+
+
+def test_status_treats_a_bare_model_name_as_latest():
+    assert make_llm(lambda r: tags("llama3.2:latest"), model="llama3.2").status().model_installed
+
+
+def test_status_when_ollama_is_not_running_does_not_raise():
+    def handler(request):
+        raise httpx.ConnectError("refused")
+
+    status = make_llm(handler).status()
+    assert (status.reachable, status.model_installed) == (False, None)
+    assert "isn't running" in status.detail
+
+
+def test_status_when_ollama_answers_with_an_error_does_not_raise():
+    status = make_llm(lambda r: httpx.Response(500)).status()
+    assert not status.reachable and status.detail
+
+
+def test_status_with_a_garbled_reply_does_not_raise():
+    assert not make_llm(lambda r: httpx.Response(200, content=b"<html>")).status().reachable
