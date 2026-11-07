@@ -141,7 +141,7 @@ class Answer:
         return [(n, self.chunks[n - 1]) for n in self.validation.cited_valid]
 
 
-def _finish(
+def finish_answer(
     question: str,
     chunks: list[RetrievedChunk],
     text: str,
@@ -188,7 +188,7 @@ def answer_question_stream(
     if not chunks:
         # Nothing to base an answer on: do not ask the model at all.
         yield NOT_FOUND
-        return _finish(question, chunks, NOT_FOUND, started, retrieval_seconds, None)
+        return finish_answer(question, chunks, NOT_FOUND, started, retrieval_seconds, None)
 
     system, user = build_prompt(question, chunks)
     pieces: list[str] = []
@@ -198,7 +198,7 @@ def answer_question_stream(
             first_token = time.perf_counter() - started
         pieces.append(piece)
         yield piece
-    return _finish(question, chunks, "".join(pieces), started, retrieval_seconds, first_token)
+    return finish_answer(question, chunks, "".join(pieces), started, retrieval_seconds, first_token)
 
 
 def answer_question(
@@ -216,8 +216,8 @@ def answer_question(
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:
-        return _finish(question, chunks, NOT_FOUND, started, retrieval_seconds, None)
+        return finish_answer(question, chunks, NOT_FOUND, started, retrieval_seconds, None)
 
     system, user = build_prompt(question, chunks)
     text = llm.generate(system, user)
-    return _finish(question, chunks, text, started, retrieval_seconds, time.perf_counter() - started)
+    return finish_answer(question, chunks, text, started, retrieval_seconds, time.perf_counter() - started)
