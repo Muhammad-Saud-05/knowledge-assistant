@@ -1,7 +1,8 @@
 """Talk to a local Ollama server through its /api/chat endpoint.
 
 Settings come from the environment (or the project's .env file):
-OLLAMA_HOST (default http://127.0.0.1:11434) and OLLAMA_MODEL (default llama3.2:3b).
+OLLAMA_HOST (default http://127.0.0.1:11434), OLLAMA_MODEL (default llama3.2:3b) and
+OLLAMA_KEEP_ALIVE (default 30m, how long Ollama keeps the model loaded after a request).
 """
 
 import json
@@ -16,6 +17,9 @@ from .base import LLMError, LLMUnavailableError, ModelNotFoundError
 
 DEFAULT_HOST = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "llama3.2:3b"
+# Ollama unloads a model after 5 idle minutes by default, and loading it again takes
+# many seconds on a CPU. Ask it to keep the model in memory for longer.
+DEFAULT_KEEP_ALIVE = "30m"
 
 # Ollama's default context window is small and silently cuts off the start of
 # a long prompt, which would drop sources without any warning. Set it explicitly.
@@ -36,10 +40,12 @@ class OllamaLLM:
         num_ctx: int = NUM_CTX,
         temperature: float = TEMPERATURE,
         client: httpx.Client | None = None,
+        keep_alive: str | None = None,
     ):
         load_dotenv(_ENV_FILE)  # variables already set in the environment win
         self.host = (host or os.environ.get("OLLAMA_HOST") or DEFAULT_HOST).rstrip("/")
         self.model = model or os.environ.get("OLLAMA_MODEL") or DEFAULT_MODEL
+        self.keep_alive = keep_alive or os.environ.get("OLLAMA_KEEP_ALIVE") or DEFAULT_KEEP_ALIVE
         self.num_ctx = num_ctx
         self.temperature = temperature
         # A client can be passed in for testing (httpx.MockTransport).
@@ -55,6 +61,7 @@ class OllamaLLM:
                 {"role": "user", "content": user},
             ],
             "stream": stream,
+            "keep_alive": self.keep_alive,
             "options": {"num_ctx": self.num_ctx, "temperature": self.temperature},
         }
 
@@ -84,6 +91,21 @@ class OllamaLLM:
                 f"Model {self.model!r} is not installed in Ollama. Run: ollama pull {self.model}"
             )
         raise LLMError(f"Ollama returned an error ({response.status_code}): {message or 'no details'}")
+
+    def warm_up(self) -> None:
+        """Load the model into memory without generating anything.
+
+        Ollama loads a model when it gets a chat request with no messages. Raises
+        the same friendly errors as generate().
+        """
+        payload = {"model": self.model, "messages": [], "stream": False, "keep_alive": self.keep_alive}
+        try:
+            response = self._client.post(f"{self.host}/api/chat", json=payload)
+        except httpx.ConnectError as error:
+            raise self._unreachable() from error
+        except httpx.TimeoutException as error:
+            raise self._timed_out() from error
+        self._check_status(response)
 
     # ----------------------------------------------------------- the LLM API
 

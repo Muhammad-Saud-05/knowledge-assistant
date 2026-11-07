@@ -13,6 +13,7 @@ def isolated_settings(monkeypatch):
     monkeypatch.setattr("src.llm.ollama.load_dotenv", lambda *a, **k: None)
     monkeypatch.delenv("OLLAMA_HOST", raising=False)
     monkeypatch.delenv("OLLAMA_MODEL", raising=False)
+    monkeypatch.delenv("OLLAMA_KEEP_ALIVE", raising=False)
 
 
 def make_llm(handler, **kwargs):
@@ -159,3 +160,57 @@ def test_stream_error_line_in_the_middle_is_reported():
 def test_stream_garbled_line_is_an_error():
     with pytest.raises(LLMError, match="unexpected format"):
         list(make_llm(lambda r: httpx.Response(200, content=b"not json\n")).stream("s", "u"))
+
+
+# ----------------------------------------------------------------- keep_alive
+
+
+def test_keep_alive_defaults_to_thirty_minutes_and_is_sent_with_every_request():
+    bodies = []
+
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, content=ndjson(reply("ok", True)))
+
+    llm = make_llm(handler)
+    assert llm.keep_alive == "30m"
+    llm.generate("s", "u")
+    list(llm.stream("s", "u"))
+    assert [b["keep_alive"] for b in bodies] == ["30m", "30m"]
+
+
+def test_keep_alive_comes_from_the_environment(monkeypatch):
+    monkeypatch.setenv("OLLAMA_KEEP_ALIVE", "2h")
+    assert OllamaLLM(client=httpx.Client()).keep_alive == "2h"
+
+
+def test_keep_alive_argument_beats_the_environment(monkeypatch):
+    monkeypatch.setenv("OLLAMA_KEEP_ALIVE", "2h")
+    assert OllamaLLM(keep_alive="10m", client=httpx.Client()).keep_alive == "10m"
+
+
+def test_warm_up_loads_the_model_without_generating():
+    seen = {}
+
+    def handler(request):
+        seen["url"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"model": "m", "done": True, "done_reason": "load"})
+
+    make_llm(handler).warm_up()
+
+    assert seen["url"] == "/api/chat"
+    assert seen["body"]["messages"] == [] and seen["body"]["keep_alive"] == "30m"
+    assert seen["body"]["model"] == "llama3.2:3b"
+
+
+def test_warm_up_reports_the_same_friendly_errors():
+    def unreachable(request):
+        raise httpx.ConnectError("refused")
+
+    with pytest.raises(LLMUnavailableError, match="Start Ollama"):
+        make_llm(unreachable).warm_up()
+
+    missing = lambda r: httpx.Response(404, json={"error": "model 'x' not found"})  # noqa: E731
+    with pytest.raises(ModelNotFoundError, match="ollama pull"):
+        make_llm(missing, model="x").warm_up()
