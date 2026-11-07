@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from ..db.pool import create_pool
 from ..ingestion.embedder import Embedder
 from ..llm.ollama import OllamaLLM
-from . import documents, health
+from . import documents, health, ingest
 from .config import Settings, load_settings
 from .observability import RequestLogMiddleware, configure_logging, request_id_of
 from .security import install_security
@@ -77,6 +77,7 @@ def create_app(settings: Settings | None = None, with_lifespan: bool = True) -> 
 
     app.include_router(health.router, prefix="/api", tags=["health"])
     app.include_router(documents.router, prefix="/api", tags=["documents"])
+    app.include_router(ingest.router, prefix="/api", tags=["documents"])
 
     install_security(app, settings)
     # Added last = outermost: every request, even a rejected one, gets an id and a log line.
