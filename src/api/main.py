@@ -18,6 +18,7 @@ from ..ingestion.embedder import Embedder
 from ..llm.ollama import OllamaLLM
 from .config import Settings, load_settings
 from .observability import RequestLogMiddleware, configure_logging, request_id_of
+from .security import install_security
 
 logger = logging.getLogger("kb.api")
 
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None, with_lifespan: bool = True) -> 
         logger.error("unhandled error id=%s type=%s", request_id_of(request), type(error).__name__)
         return JSONResponse({"detail": "Something went wrong on the server."}, status_code=500)
 
+    install_security(app, settings)
     # Added last = outermost: every request, even a rejected one, gets an id and a log line.
     app.add_middleware(RequestLogMiddleware)
     return app
