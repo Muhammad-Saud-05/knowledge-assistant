@@ -10,3 +10,6 @@ node_modules/
 
 # Personal sample documents
 data/
+
+# Front end build output
+web/dist/
