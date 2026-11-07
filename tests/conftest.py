@@ -139,3 +139,87 @@ def add_document(embedder):
         return doc_id, chunk_ids
 
     return add
+
+
+# ------------------------------------------------------------- web API helpers
+
+
+class FakePool:
+    """Stands in for the connection pool: each .connection() is a fresh connection to the test database."""
+
+    def __init__(self, dbname):
+        self.dbname = dbname
+
+    def connection(self):
+        return get_connection(self.dbname)  # as a context manager: commits on success, then closes
+
+
+class FakeApiLLM:
+    """A scripted language model for API tests. Records every prompt it receives."""
+
+    def __init__(self, reply="A cited answer [1].", error=None):
+        from src.llm.base import ModelStatus
+
+        self.reply = reply
+        self.error = error  # an exception to raise when asked to generate
+        self.calls = []
+        self.model = "fake-model"
+        self.status_result = ModelStatus(True, "fake-model", True, None)
+
+    def generate(self, system, user):
+        self.calls.append((system, user))
+        if self.error:
+            raise self.error
+        return self.reply
+
+    def stream(self, system, user):
+        self.calls.append((system, user))
+        if self.error:
+            raise self.error
+        for i in range(0, len(self.reply), 6):
+            yield self.reply[i : i + 6]
+
+    def status(self):
+        return self.status_result
+
+    def warm_up(self):
+        pass
+
+
+@pytest.fixture
+def pool(test_database):
+    return FakePool(test_database)
+
+
+@pytest.fixture
+def api_settings(tmp_path):
+    from src.api.config import Settings
+
+    return Settings(upload_dir=tmp_path / "data" / "uploads", max_upload_bytes=64 * 1024)
+
+
+@pytest.fixture
+def fake_llm():
+    return FakeApiLLM()
+
+
+@pytest.fixture
+def app(conn, test_database, embedder, fake_llm, api_settings):
+    """The real app (routes, middleware) with the pool, embedder and model replaced by fakes."""
+    from src.api.deps import get_embedder, get_llm, get_pool
+    from src.api.main import create_app
+
+    application = create_app(settings=api_settings, with_lifespan=False)
+    application.dependency_overrides[get_pool] = lambda: FakePool(test_database)
+    application.dependency_overrides[get_embedder] = lambda: embedder
+    application.dependency_overrides[get_llm] = lambda: fake_llm
+    return application
+
+
+@pytest.fixture
+def client(app):
+    from fastapi.testclient import TestClient
+
+    # Used as a context manager so all requests share one event loop.
+    with TestClient(app, base_url="http://localhost") as test_client:
+        yield test_client
