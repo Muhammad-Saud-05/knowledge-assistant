@@ -14,9 +14,17 @@ import psycopg
 from .cli_filters import add_filter_arguments, filters_from_args
 from .db.connection import get_connection
 from .ingestion.embedder import Embedder
+from .retrieval.defaults import (
+    RERANK_MODE,
+    SELECTABLE_MODES,
+    RerankerLoadError,
+    load_reranker,
+    reranker_enabled,
+    resolve_mode,
+)
 from .retrieval.filters import SearchFilters
 from .retrieval.fusion import reciprocal_rank_fusion
-from .retrieval.hybrid import DEFAULT_CANDIDATES, MODES, search
+from .retrieval.hybrid import DEFAULT_CANDIDATES, search
 from .retrieval.keyword import keyword_search
 from .retrieval.models import RetrievedChunk
 from .retrieval.vector import vector_search
@@ -41,9 +49,10 @@ def rank_text(rank: int | None) -> str:
 def format_result(position: int, chunk: RetrievedChunk) -> str:
     fused = f"{chunk.fused_score:.4f}" if chunk.fused_score is not None else "-"
     preview = " ".join(chunk.text.split())[:PREVIEW_CHARS]
+    reranked = f" | rerank {rank_text(chunk.rerank_rank)} ({chunk.rerank_score:.2f})" if chunk.rerank_rank is not None else ""
     return (
         f"{position:>2}. {chunk.title or 'Untitled'} | {where(chunk)}\n"
-        f"    vector {rank_text(chunk.vector_rank)} | keyword {rank_text(chunk.keyword_rank)} | fused {fused}\n"
+        f"    vector {rank_text(chunk.vector_rank)} | keyword {rank_text(chunk.keyword_rank)} | fused {fused}{reranked}\n"
         f"    {preview}"
     )
 
@@ -57,7 +66,7 @@ def print_results(heading: str, results: list[RetrievedChunk]) -> None:
 
 
 def search_all_modes(
-    conn, embedder, query: str, k: int, filters: SearchFilters | None
+    conn, embedder, query: str, k: int, filters: SearchFilters | None, reranker=None
 ) -> dict[str, list[RetrievedChunk]]:
     """Vector, keyword and hybrid results, with each result's rank in the other lists.
 
@@ -76,11 +85,14 @@ def search_all_modes(
             chunk.keyword_rank = keyword_by_id[chunk.chunk_id].keyword_rank
         return chunk
 
-    return {
+    views = {
         "vector": [with_cross_ranks(c) for c in vector_results[:k]],
         "keyword": [with_cross_ranks(c) for c in keyword_results[:k]],
         "hybrid": reciprocal_rank_fusion([vector_results, keyword_results], limit=k),
     }
+    if reranker is not None:  # the application's default: the same 30 vector candidates, reranked
+        views[RERANK_MODE] = [with_cross_ranks(c) for c in reranker.rerank(query, vector_results, k)]
+    return views
 
 
 def print_comparison(views: dict[str, list[RetrievedChunk]]) -> None:
@@ -91,17 +103,18 @@ def print_comparison(views: dict[str, list[RetrievedChunk]]) -> None:
             row = rows.setdefault(chunk.chunk_id, {"label": f"{chunk.title} | {where(chunk)}"})
             row[mode] = position
     print("\n=== Rank in each mode (top results of any mode; '-' = not in that mode's top results) ===")
-    print(f"{'vector':>7} {'keyword':>8} {'hybrid':>7}  chunk")
-    for row in sorted(rows.values(), key=lambda r: (r.get("hybrid", 99), r.get("vector", 99), r.get("keyword", 99))):
-        cells = [rank_text(row.get(mode)) for mode in ("vector", "keyword", "hybrid")]
-        print(f"{cells[0]:>7} {cells[1]:>8} {cells[2]:>7}  {row['label'][:80]}")
+    modes = list(views)
+    print("".join(f"{m:>14}" for m in modes) + "  chunk")
+    for row in sorted(rows.values(), key=lambda r: tuple(r.get(m, 99) for m in reversed(modes))):
+        cells = "".join(f"{rank_text(row.get(m)):>14}" for m in modes)
+        print(f"{cells}  {row['label'][:80]}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Search your documents (no language model involved).")
     parser.add_argument("query", help="what to search for, in quotes")
     parser.add_argument("--k", type=int, default=5, help="results to show per mode (default 5)")
-    parser.add_argument("--mode", choices=MODES, help="show one mode only (default: all three)")
+    parser.add_argument("--mode", choices=SELECTABLE_MODES, help="show one mode only (default: all, including the reranked one unless RERANKER_ENABLED=false)")
     add_filter_arguments(parser)
     args = parser.parse_args(argv)
     if args.k < 1:
@@ -121,16 +134,34 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Could not connect to the database ({reason})", file=sys.stderr)
         return 2
 
+    try:
+        enabled = reranker_enabled()
+        if args.mode:
+            resolve_mode(args.mode, enabled)
+    except ValueError as error:
+        print(f"{error}", file=sys.stderr)
+        return 2
+    reranker = None
+    if enabled and args.mode in (None, RERANK_MODE):
+        try:
+            reranker = load_reranker()
+        except RerankerLoadError as error:
+            print(f"{error}", file=sys.stderr)
+            return 2
+
     embedder = Embedder()
     print(f"Query: {args.query}")
     if filters:
         print(f"Filters: {filters}")
     with conn:
         if args.mode:
-            results = search(conn, embedder, args.query, k=args.k, mode=args.mode, filters=filters)
+            results = search(
+                conn, embedder, args.query, k=args.k, mode=args.mode, filters=filters,
+                reranker=reranker if args.mode == RERANK_MODE else None,
+            )
             print_results(args.mode.upper(), results)
         else:
-            views = search_all_modes(conn, embedder, args.query, args.k, filters)
+            views = search_all_modes(conn, embedder, args.query, args.k, filters, reranker)
             for mode, results in views.items():
                 print_results(mode.upper(), results)
             print_comparison(views)

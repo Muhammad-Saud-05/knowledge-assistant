@@ -17,7 +17,7 @@ from .db.connection import get_connection
 from .ingestion.embedder import Embedder
 from .llm.base import LLMError
 from .llm.ollama import NUM_CTX, OllamaLLM
-from .retrieval.hybrid import MODES
+from .retrieval.defaults import RERANK_CANDIDATES, RerankerLoadError, SELECTABLE_MODES, load_reranker, reranker_enabled, resolve_mode
 from .synthesis.answer import Answer, answer_question_stream
 
 SOURCE_PREVIEW_CHARS = 120
@@ -75,10 +75,12 @@ def _found_by(chunk, mode: str) -> str:
         return f"#{value}" if value is not None else "-"
 
     parts = []
-    if mode in ("vector", "hybrid"):
+    if mode in ("vector", "hybrid", "vector+rerank"):
         parts.append(f"vector {rank(chunk.vector_rank)}")
     if mode in ("keyword", "hybrid"):
         parts.append(f"keyword {rank(chunk.keyword_rank)}")
+    if chunk.rerank_rank is not None:
+        parts.append(f"rerank {rank(chunk.rerank_rank)} (score {chunk.rerank_score:.2f})")
     return ", ".join(parts)
 
 
@@ -124,7 +126,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("question", help="your question, in quotes")
     parser.add_argument("--k", type=int, default=5, help="how many sources to retrieve (default 5)")
     parser.add_argument(
-        "--mode", choices=MODES, default="hybrid", help="how to search: vector, keyword or hybrid (default)"
+        "--mode", choices=SELECTABLE_MODES, default=None,
+        help="how to search (default: vector search reranked by the cross-encoder, or hybrid when "
+        "RERANKER_ENABLED=false)",
     )
     parser.add_argument("--model", help="Ollama model name (default: OLLAMA_MODEL or llama3.2:3b)")
     parser.add_argument(
@@ -149,6 +153,19 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Could not connect to the database ({reason})", file=sys.stderr)
         return 2
 
+    try:
+        mode = resolve_mode(args.mode, reranker_enabled())
+    except ValueError as error:
+        print(f"{error}", file=sys.stderr)
+        return 2
+    reranker = None
+    if mode.endswith("+rerank"):
+        try:
+            reranker = load_reranker()  # before the questions are timed, like the embedding model
+        except RerankerLoadError as error:
+            print(f"{error}", file=sys.stderr)
+            return 2
+
     llm = _PromptWatcher(OllamaLLM(model=args.model), args.show_prompt)
     embedder = Embedder()
     # Load the embedding model now, so the timings below measure the question,
@@ -159,7 +176,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         with conn:
             stream = answer_question_stream(
-                args.question, conn, embedder, llm, k=args.k, mode=args.mode, filters=filters
+                args.question, conn, embedder, llm, k=args.k, mode=mode, filters=filters,
+                reranker=reranker, rerank_candidates=RERANK_CANDIDATES,
             )
             while True:
                 try:
@@ -171,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{error}", file=sys.stderr)
         return 1
 
-    _print_report(answer, model_load_seconds, args.mode)
+    _print_report(answer, model_load_seconds, mode)
     return 0
 
 
