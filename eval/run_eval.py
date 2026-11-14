@@ -27,7 +27,9 @@ from .validate_questions import Corpus, doc_passes_filters, load_corpus, to_sear
 
 from src.retrieval.hybrid import ALL_MODES, parse_mode
 
-KNOWN_MODES = ALL_MODES
+# Phase 2b: configuration C applied to each sub-question of a split question (see src/retrieval/decompose.py).
+DECOMPOSE_MODES = {"rerank-split-rule": "rule", "rerank-split-llm": "llm"}
+KNOWN_MODES = ALL_MODES + tuple(DECOMPOSE_MODES)
 DEPTH = 10  # MRR@10 needs the top ten
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
@@ -48,6 +50,14 @@ def parse_modes(text: str, known: tuple[str, ...] = KNOWN_MODES) -> list[str]:
     if len(set(modes)) != len(modes):
         raise EvalError("each mode may be listed only once")
     return modes
+
+
+def describe_mode(mode: str) -> tuple[str, bool, str | None]:
+    """(base search, uses the reranker, decomposer name or None) for any mode name."""
+    if mode in DECOMPOSE_MODES:
+        return "vector", True, DECOMPOSE_MODES[mode]
+    base, rerank = parse_mode(mode)
+    return base, rerank, None
 
 
 def check_split_allowed(split: str, confirmed: bool) -> None:
@@ -93,22 +103,51 @@ def run_questions(
                         vector_rank=chunk.vector_rank, keyword_rank=chunk.keyword_rank, filter_ok=filter_ok,
                     )
                 )
-            results[mode][q.id] = QuestionRun(q.id, mode, entries, seconds)
+            info = getattr(search_fn, "last_decomposition", None)  # (sub-questions, seconds) or None
+            results[mode][q.id] = QuestionRun(
+                q.id, mode, entries, seconds,
+                sub_questions=list(info[0]) if info else None,
+                decomposition_seconds=info[1] if info else None,
+            )
     return results
 
 
-def build_search_fn(conn, embedder, candidates: int, reranker=None, rerank_candidates: int = 30, bm25=None) -> SearchFn:
-    from src.retrieval.hybrid import search
+class _SearchFn:
+    """Runs one question in one mode. After a decomposing mode, last_decomposition holds the
+    sub-questions and the time the split took; after any other mode it is None."""
 
-    def run(question: Question, mode: str) -> list[RetrievedChunk]:
+    def __init__(self, conn, embedder, candidates, reranker, rerank_candidates, bm25, decomposers):
+        self.conn, self.embedder, self.candidates = conn, embedder, candidates
+        self.reranker, self.rerank_candidates, self.bm25 = reranker, rerank_candidates, bm25
+        self.decomposers = decomposers or {}
+        self.last_decomposition = None
+
+    def __call__(self, question: Question, mode: str) -> list[RetrievedChunk]:
+        from src.retrieval.hybrid import search
+
+        self.last_decomposition = None
         filters = to_search_filters(question.filters) if question.filters else None
+        if mode in DECOMPOSE_MODES:
+            from src.retrieval.decompose import search_decomposed
+
+            result = search_decomposed(
+                self.conn, self.embedder, question.question, DEPTH, self.reranker,
+                self.decomposers[DECOMPOSE_MODES[mode]], filters, self.rerank_candidates,
+            )
+            self.last_decomposition = (result.sub_questions, result.decomposition_seconds)
+            return result.chunks
         _, rerank = parse_mode(mode)
         return search(
-            conn, embedder, question.question, k=DEPTH, mode=mode, filters=filters, candidates=candidates,
-            reranker=reranker if rerank else None, rerank_candidates=rerank_candidates, bm25=bm25,
+            self.conn, self.embedder, question.question, k=DEPTH, mode=mode, filters=filters,
+            candidates=self.candidates, reranker=self.reranker if rerank else None,
+            rerank_candidates=self.rerank_candidates, bm25=self.bm25,
         )
 
-    return run
+
+def build_search_fn(
+    conn, embedder, candidates: int, reranker=None, rerank_candidates: int = 30, bm25=None, decomposers=None
+) -> SearchFn:
+    return _SearchFn(conn, embedder, candidates, reranker, rerank_candidates, bm25, decomposers)
 
 
 def load_reranker(model_name: str | None, input_style: str):
@@ -196,18 +235,31 @@ def main(argv: list[str] | None = None) -> int:
             chunks = conn.execute("SELECT count(*) FROM chunks").fetchone()[0]
 
             embedder = Embedder()
-            if any(parse_mode(m)[0] != "keyword" for m in modes):
+            if any(describe_mode(m)[0] != "keyword" for m in modes):
                 embedder.embed_query("warm up")  # load the model before anything is timed
             reranker, reranker_info = None, None
-            if any(parse_mode(m)[1] for m in modes):
+            if any(describe_mode(m)[1] for m in modes):
                 reranker, reranker_info = load_reranker(args.reranker_model, args.input_style)
             bm25 = None
-            if any(parse_mode(m)[0] == "hybrid-bm25" for m in modes):
+            if any(describe_mode(m)[0] == "hybrid-bm25" for m in modes):
                 from src.retrieval.bm25 import Bm25Searcher
 
                 bm25 = Bm25Searcher(conn)
                 bm25.warm_up()  # build the in-memory index before anything is timed
-            search_fn = build_search_fn(conn, embedder, args.candidates, reranker, args.rerank_candidates, bm25)
+            decomposers = {}
+            if any(describe_mode(m)[2] for m in modes):
+                from src.llm.ollama import OllamaLLM
+                from src.retrieval.decompose import LLMDecomposer, RuleDecomposer
+
+                decomposers["rule"] = RuleDecomposer()
+                if any(describe_mode(m)[2] == "llm" for m in modes):
+                    llm = OllamaLLM(temperature=0, json_output=True)
+                    llm.warm_up()
+                    decomposers["llm"] = LLMDecomposer(llm)
+                    decomposers["llm"].decompose("warm up the model before anything is timed")
+            search_fn = build_search_fn(
+                conn, embedder, args.candidates, reranker, args.rerank_candidates, bm25, decomposers
+            )
             results = run_questions(questions, modes, search_fn, corpus)
     except EvalError as error:
         print(f"Cannot run the evaluation: {error}", file=sys.stderr)

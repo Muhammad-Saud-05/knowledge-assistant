@@ -39,6 +39,8 @@ class QuestionRun:
     mode: str
     entries: list[RankEntry]
     seconds: float
+    sub_questions: list[str] | None = None  # set by the decomposing modes (the question itself if not split)
+    decomposition_seconds: float | None = None
 
     @property
     def top1_score(self) -> float | None:
@@ -70,6 +72,9 @@ def results_to_json(questions: list[Question], results: Results, meta: dict) -> 
                 "top1_score": run.top1_score,
                 "entries": [asdict(e) for e in run.entries],
             }
+            if run.sub_questions is not None:
+                runs[mode]["sub_questions"] = run.sub_questions
+                runs[mode]["decomposition_seconds"] = round(run.decomposition_seconds or 0.0, 4)
         out_questions.append(
             {
                 "id": q.id,
@@ -90,7 +95,10 @@ def results_from_json(data: dict) -> Results:
     for item in data["questions"]:
         for mode, run in item["runs"].items():
             entries = [RankEntry(**e) for e in run["entries"]]
-            results.setdefault(mode, {})[item["id"]] = QuestionRun(item["id"], mode, entries, run["seconds"])
+            results.setdefault(mode, {})[item["id"]] = QuestionRun(
+                item["id"], mode, entries, run["seconds"],
+                run.get("sub_questions"), run.get("decomposition_seconds"),
+            )
     return results
 
 
@@ -341,6 +349,66 @@ def top1_tables(questions: list[Question], results: Results, modes: list[str]) -
     return summary + "\n\n" + detail
 
 
+def coverage_paired_table(questions: list[Question], results: Results, pairs: list[tuple[str, str]]) -> str:
+    """Paired differences in multi_doc coverage@5 (the share of required documents found in the top 5)."""
+    multi = [q for q in headline_questions(questions) if q.category == "multi_doc"]
+    rows = []
+    for a, b in pairs:
+        if a not in results or b not in results or not multi:
+            continue
+        va = [s.coverage[5] for s in _scores(multi, results, a)]
+        vb = [s.coverage[5] for s in _scores(multi, results, b)]
+        diff, low, high = paired_bootstrap_ci(va, vb)
+        better = sum(x > y for x, y in zip(va, vb))
+        worse = sum(x < y for x, y in zip(va, vb))
+        verdict = "clear" if low > 0 or high < 0 else "not clear"
+        rows.append(
+            [f"{a} - {b}", f"n={len(multi)}", "multi_doc coverage@5", f"{diff:+.3f}", ci_text((low, high)),
+             f"{better} better / {worse} worse / {len(multi) - better - worse} same", verdict]
+        )
+    return md_table(
+        ["comparison", "n", "metric", "mean difference", "paired 95% CI", "questions", "interval excludes 0?"], rows
+    )
+
+
+def decomposition_section(questions: list[Question], results: Results, modes: list[str]) -> str:
+    """For modes that split questions: how many were split, the time the split took, and the
+    sub-questions produced for every multi_doc question."""
+    split_modes = [
+        m for m in modes if any(r.sub_questions is not None for r in results[m].values())
+    ]
+    if not split_modes:
+        return ""
+    qs = headline_questions(questions)
+    rows = []
+    for mode in split_modes:
+        runs = [results[mode][q.id] for q in qs]
+        split = sum(1 for r in runs if r.sub_questions and len(r.sub_questions) > 1)
+        times = [(r.decomposition_seconds or 0.0) * 1000 for r in runs]
+        totals = [r.seconds * 1000 for r in runs]
+        rows.append(
+            [mode, f"{split}/{len(qs)}", f"{median(times):.0f}", f"{percentile(times, 0.95):.0f}",
+             f"{median(totals):.0f}", f"{percentile(totals, 0.95):.0f}"]
+        )
+    parts = [
+        md_table(
+            ["mode", "main-table questions split", "median decomposition ms", "p95 decomposition ms",
+             "median total ms/question", "p95 total ms/question"],
+            rows,
+        )
+    ]
+    for q in (q for q in qs if q.category == "multi_doc"):
+        lines = [f"**{q.id}** ({', '.join(short(d) for d in q.expected_docs)}): {q.question}"]
+        for mode in split_modes:
+            subs = results[mode][q.id].sub_questions or [q.question]
+            if len(subs) > 1:
+                lines.append(f"- {mode}: " + " | ".join(f"`{s}`" for s in subs))
+            else:
+                lines.append(f"- {mode}: not split")
+        parts.append("\n".join(lines))
+    return "\n\n".join(parts)
+
+
 def timing_note(modes: list[str]) -> str:
     return (
         "Scores are not comparable across modes: vector = cosine similarity, keyword = ts_rank_cd, "
@@ -370,6 +438,16 @@ def render_report(
         f"## Paired differences (same questions resampled for both modes)\n\n{paired_table(questions, results, pairs, extended=extended)}\n\n"
         f"### Paired differences by category\n\n{paired_table(questions, results, pairs, groups=by_category, extended=extended)}\n\n"
         f"### Paired differences by difficulty bucket\n\n{paired_table(questions, results, pairs, groups=by_difficulty, extended=extended)}",
+        *(
+            [f"### Paired differences in multi_doc coverage@5\n\n{coverage_paired_table(questions, results, pairs)}"]
+            if baseline
+            else []
+        ),
+        *(
+            [f"## Question decomposition\n\n{decomposition_section(questions, results, modes)}"]
+            if decomposition_section(questions, results, modes)
+            else []
+        ),
         f"## Wins and losses per question\n\n{win_loss_lists(questions, results, pairs, k)}",
         f"## Questions each mode missed at k={k}\n\n{missed_lists(questions, results, modes, k)}",
         f"## Filtered questions: filter-correctness check\n\n{filtered_table(questions, results, modes)}",
