@@ -1,0 +1,350 @@
+[
+  {
+    "id": "q01",
+    "category": "exact_term",
+    "question": "Which header name does the FastAPI middleware example use to report how long a request took?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["custom header `X-Process-Time` containing the time in seconds"]}],
+    "holdout": false,
+    "notes": "Answer hinges on the header name X-Process-Time."
+  },
+  {
+    "id": "q02",
+    "category": "exact_term",
+    "question": "What is the default value of max_age for CORSMiddleware?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-cors.md", "evidence": ["to cache CORS responses. Defaults to `600`"]}],
+    "holdout": false,
+    "notes": "Parameter name plus a number (600)."
+  },
+  {
+    "id": "q03",
+    "category": "exact_term",
+    "question": "Which method do I call on BackgroundTasks to queue up a function?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-background-tasks.md", "evidence": ["with the method `.add_task()`"]}],
+    "holdout": false,
+    "notes": "Method name .add_task()."
+  },
+  {
+    "id": "q04",
+    "category": "exact_term",
+    "question": "What is the default keep_alive duration in the Ollama API?",
+    "expected": [{"doc": "data/corpus/docs/ollama-api.md", "evidence": ["following the request (default: `5m`)"]}],
+    "holdout": true,
+    "notes": "Parameter keep_alive and its default 5m."
+  },
+  {
+    "id": "q05",
+    "category": "exact_term",
+    "question": "Which exception class do I override to change the validation error response in FastAPI?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-handling-errors.md", "evidence": ["internally raises a `RequestValidationError`"]}],
+    "holdout": false,
+    "notes": "Class name RequestValidationError."
+  },
+  {
+    "id": "q06",
+    "category": "exact_term",
+    "question": "What exception does FastAPI raise when a WebSocket client disconnects?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-websockets.md", "evidence": ["will raise a `WebSocketDisconnect` exception"]}],
+    "holdout": false,
+    "notes": "Class name WebSocketDisconnect."
+  },
+  {
+    "id": "q07",
+    "category": "exact_term",
+    "question": "Which flag do I add to the fastapi run command when the container sits behind a TLS termination proxy?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-deployment-docker.pdf", "evidence": ["add the option --proxy-headers"]}],
+    "holdout": false,
+    "notes": "Command-line flag --proxy-headers; the document is a PDF."
+  },
+  {
+    "id": "q08",
+    "category": "exact_term",
+    "question": "What are the default m and ef_construction values for an HNSW index in pgvector?",
+    "expected": [{"doc": "data/corpus/docs/pgvector-readme.pdf", "evidence": ["connections per layer (16 by default)", "for constructing the graph (64 by default)"]}],
+    "holdout": true,
+    "notes": "Two parameter names and their numeric defaults (16 and 64); PDF."
+  },
+  {
+    "id": "q09",
+    "category": "exact_term",
+    "question": "What HTTP status code and header should a rate limiter send back when it rejects a request?",
+    "expected": [{"doc": "sample_corpus/rate-limiting-notes.md", "evidence": ["return HTTP status 429 (Too Many Requests)"]}],
+    "holdout": false,
+    "notes": "Status code 429 and the Retry-After header."
+  },
+  {
+    "id": "q10",
+    "category": "exact_term",
+    "question": "Which decorator stops Pydantic Settings from re-reading the .env file on every request?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-settings.md", "evidence": ["Using `@lru_cache` lets you avoid reading the dotenv file"]}],
+    "holdout": false,
+    "notes": "Decorator name lru_cache."
+  },
+  {
+    "id": "q11",
+    "category": "paraphrase",
+    "question": "Why does running more copies of my web service multiply the RAM it needs?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-deployment-concepts.pdf", "evidence": ["multiple processes normally don't share any memory"]}],
+    "holdout": false,
+    "notes": "Easy: the question says RAM and copies; the source says memory and processes."
+  },
+  {
+    "id": "q12",
+    "category": "paraphrase",
+    "question": "How does the cache decide which entries to throw out when it fills up?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-query-cache.md", "evidence": ["least recently used (LRU) approach to expire older entries"]}],
+    "holdout": false,
+    "notes": "Easy: eviction policy asked without the term LRU."
+  },
+  {
+    "id": "q13",
+    "category": "paraphrase",
+    "question": "Why should I test myself instead of just rereading my notes?",
+    "expected": [{"doc": "sample_corpus/study-habits-notes.md", "evidence": ["Retrieving a memory strengthens it more"]}],
+    "holdout": false,
+    "notes": "Easy: active recall, asked in everyday words."
+  },
+  {
+    "id": "q14",
+    "category": "paraphrase",
+    "question": "What happens if I read a record immediately after writing it, when the copies of the data sync up later?",
+    "expected": [{"doc": "data/corpus/docs/system-design-primer.md", "evidence": ["reads will eventually see it (typically within milliseconds)"]}],
+    "holdout": true,
+    "notes": "Eventual consistency without naming it. The primer is a long document with many neighbouring passages."
+  },
+  {
+    "id": "q15",
+    "category": "paraphrase",
+    "question": "How can one machine with only one public address host many encrypted websites?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-deployment-https.md", "evidence": ["to have several https certificates and serve multiple https"]}],
+    "holdout": false,
+    "notes": "Hard: describes the SNI extension without any of its vocabulary."
+  },
+  {
+    "id": "q16",
+    "category": "paraphrase",
+    "question": "What goes wrong when sites link back to pages that the spider already visited?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-web-crawler.pdf", "evidence": ["stuck in an infinite loop if the graph"]}],
+    "holdout": false,
+    "notes": "Hard: graph cycles in a crawler, described with spider and link back."
+  },
+  {
+    "id": "q17",
+    "category": "paraphrase",
+    "question": "Why can't an ordinary SQL store cope with sending each new post to every follower of a celebrity?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-twitter.pdf", "evidence": ["will overload a traditional relational database"]}],
+    "holdout": false,
+    "notes": "Hard: fan-out problem without the words tweet, fanout or relational."
+  },
+  {
+    "id": "q18",
+    "category": "paraphrase",
+    "question": "How would you find the quickest chain of friends between two people on a small network?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-social-graph.md", "evidence": ["unweighted shortest path task with a general BFS approach"]}],
+    "holdout": true,
+    "notes": "Hard: shortest path by breadth-first search, asked as a story."
+  },
+  {
+    "id": "q19",
+    "category": "paraphrase",
+    "question": "How does the design pick a unique short identifier for each saved snippet?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-pastebin.md", "evidence": ["hash of the user's ip_address + timestamp"]}],
+    "holdout": false,
+    "notes": "Hard: URL generation via an MD5 hash, asked without hash or url."
+  },
+  {
+    "id": "q20",
+    "category": "paraphrase",
+    "question": "Which option tells the framework which upstream machines may be believed about the original request scheme?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-behind-a-proxy.md", "evidence": ["pass the IP addresses that should be trusted"]}],
+    "holdout": false,
+    "notes": "Hard: forwarded-allow-ips described abstractly."
+  },
+  {
+    "id": "q21",
+    "category": "paraphrase",
+    "question": "How do I keep my passwords from ending up in the repository?",
+    "expected": [{"doc": "sample_corpus/git-workflow-cheatsheet.md", "evidence": ["Add them to `.gitignore` before the first commit"]}],
+    "holdout": false,
+    "notes": "Easy: everyday wording."
+  },
+  {
+    "id": "q22",
+    "category": "paraphrase",
+    "question": "Why repeat some words at the start of each new piece when splitting a document?",
+    "expected": [{"doc": "sample_corpus/rag-beginners-guide.pdf", "evidence": ["an idea that falls across a boundary"]}],
+    "holdout": true,
+    "notes": "Chunk overlap, asked without the words chunk or overlap."
+  },
+  {
+    "id": "q23",
+    "category": "multi_doc",
+    "question": "How do I run a FastAPI container behind a proxy that handles HTTPS?",
+    "expected": [
+      {"doc": "data/corpus/docs/fastapi-deployment-docker.pdf", "evidence": ["add the option --proxy-headers"]},
+      {"doc": "data/corpus/docs/fastapi-deployment-https.md", "evidence": ["options you could use as a TLS Termination Proxy"]}
+    ],
+    "holdout": false,
+    "notes": "Container advice (Docker PDF) plus what a TLS termination proxy is (HTTPS document)."
+  },
+  {
+    "id": "q24",
+    "category": "multi_doc",
+    "question": "How can I test a FastAPI app whose settings come from environment variables?",
+    "expected": [
+      {"doc": "data/corpus/docs/fastapi-testing.md", "evidence": ["Create a `TestClient` by passing your **FastAPI** application to it"]},
+      {"doc": "data/corpus/docs/fastapi-settings.md", "evidence": ["very easy to provide a different settings object during testing"]}
+    ],
+    "holdout": false,
+    "notes": "TestClient (testing) plus dependency override of the settings (settings)."
+  },
+  {
+    "id": "q25",
+    "category": "multi_doc",
+    "question": "How can a browser-based frontend read a custom response header that my middleware adds?",
+    "expected": [
+      {"doc": "data/corpus/docs/fastapi-cors.md", "evidence": ["response headers that should be made accessible to the browser"]},
+      {"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["client in a browser to be able to see"]}
+    ],
+    "holdout": false,
+    "notes": "Both documents mention expose_headers, from different angles."
+  },
+  {
+    "id": "q26",
+    "category": "multi_doc",
+    "question": "At what point do background tasks run relative to the response and the middleware?",
+    "expected": [
+      {"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["they will run after all the middleware"]},
+      {"doc": "data/corpus/docs/fastapi-background-tasks.md", "evidence": ["define background tasks to be run after returning a response"]}
+    ],
+    "holdout": true,
+    "notes": "Order of execution spans the middleware note and the background tasks page."
+  },
+  {
+    "id": "q27",
+    "category": "multi_doc",
+    "question": "How do multiple workers affect memory use, and how do I set their number in a container?",
+    "expected": [
+      {"doc": "data/corpus/docs/fastapi-deployment-concepts.pdf", "evidence": ["multiple processes normally don't share any memory"]},
+      {"doc": "data/corpus/docs/fastapi-deployment-docker.pdf", "evidence": ["use the --workers command line option to set the number"]}
+    ],
+    "holdout": false,
+    "notes": "Memory per process (concepts) plus the --workers flag (Docker)."
+  },
+  {
+    "id": "q28",
+    "category": "multi_doc",
+    "question": "How do the design solutions spread data across many machines for the social graph and the query cache?",
+    "expected": [
+      {"doc": "data/corpus/docs/sdp-solution-social-graph.md", "evidence": ["across Person Servers and access them with a Lookup Service"]},
+      {"doc": "data/corpus/docs/sdp-solution-query-cache.md", "evidence": ["across all machines in the cache cluster"]}
+    ],
+    "holdout": false,
+    "notes": "Two solutions that both shard, in different words."
+  },
+  {
+    "id": "q29",
+    "category": "multi_doc",
+    "question": "How do I build Ollama from source and which endpoint generates a completion?",
+    "expected": [
+      {"doc": "data/corpus/docs/ollama-development.md", "evidence": ["3.24 or newer"]},
+      {"doc": "data/corpus/docs/ollama-api.md", "evidence": ["POST /api/generate"]}
+    ],
+    "holdout": false,
+    "notes": "Build requirements (development) plus the endpoint (API)."
+  },
+  {
+    "id": "q30",
+    "category": "multi_doc",
+    "question": "How does the RAG guide combine keyword and vector search, and how do I compute cosine similarity in pgvector?",
+    "expected": [
+      {"doc": "sample_corpus/rag-beginners-guide.pdf", "evidence": ["using both vector search and keyword search"]},
+      {"doc": "data/corpus/docs/pgvector-readme.pdf", "evidence": ["For cosine similarity, use 1 - cosine distance"]}
+    ],
+    "holdout": true,
+    "notes": "Hybrid retrieval idea (guide) plus the SQL for similarity (pgvector)."
+  },
+  {
+    "id": "q31",
+    "category": "unanswerable",
+    "question": "How do I add OAuth2 password login with JWT tokens to my FastAPI app?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Plausible but absent: the corpus only links to an OAuth2 scopes page, with no explanation."
+  },
+  {
+    "id": "q32",
+    "category": "unanswerable",
+    "question": "How do I serve a GraphQL schema from FastAPI?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Plausible but absent: GraphQL appears only in a social-graph note saying not to use it."
+  },
+  {
+    "id": "q33",
+    "category": "unanswerable",
+    "question": "How can I stream responses to the browser with Server-Sent Events in FastAPI?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Plausible but absent: no mention of Server-Sent Events anywhere."
+  },
+  {
+    "id": "q34",
+    "category": "unanswerable",
+    "question": "What is the boiling point of water at the top of Mount Everest?",
+    "expected": [],
+    "holdout": true,
+    "notes": "Off-topic."
+  },
+  {
+    "id": "q35",
+    "category": "unanswerable",
+    "question": "Who won the 2018 FIFA World Cup final?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Off-topic."
+  },
+  {
+    "id": "q36",
+    "category": "unanswerable",
+    "question": "How many calories are in a slice of pepperoni pizza?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Off-topic."
+  },
+  {
+    "id": "q37",
+    "category": "filtered",
+    "question": "Which tools can renew HTTPS certificates automatically when acting as a TLS termination proxy?",
+    "filters": {"source_types": ["pdf"]},
+    "expected": [{"doc": "data/corpus/docs/fastapi-deployment-concepts.pdf", "evidence": ["Automatically handles certificate renewals"]}],
+    "holdout": false,
+    "notes": "File-type filter: pdf. The HTTPS markdown page also mentions renewals, so the filter matters."
+  },
+  {
+    "id": "q38",
+    "category": "filtered",
+    "question": "In what unit is the load_duration value reported in an Ollama response?",
+    "filters": {"path_prefix": "data/corpus/docs/ollama-"},
+    "expected": [{"doc": "data/corpus/docs/ollama-api.md", "evidence": ["time spent in nanoseconds loading the model"]}],
+    "holdout": false,
+    "notes": "Path-prefix filter: the three Ollama documents."
+  },
+  {
+    "id": "q39",
+    "category": "filtered",
+    "question": "How does the sliding window counter approximate a true sliding window?",
+    "filters": {"date_to": "2026-09-30"},
+    "expected": [{"doc": "sample_corpus/rate-limiting-notes.md", "evidence": ["approximates a sliding window using only two counters"]}],
+    "holdout": false,
+    "notes": "Date filter: only the rate limiting notes (front-matter date 2026-09-14) are dated on or before 2026-09-30."
+  },
+  {
+    "id": "q40",
+    "category": "filtered",
+    "question": "How do I undo my last commit but keep the changes?",
+    "filters": {"date_from": "2026-10-01", "date_to": "2026-10-31"},
+    "expected": [{"doc": "sample_corpus/git-workflow-cheatsheet.md", "evidence": ["git reset --soft HEAD~1"]}],
+    "holdout": true,
+    "notes": "Date-range filter: only the git cheatsheet (front-matter date 2026-10-02) falls in October 2026."
+  }
+]
