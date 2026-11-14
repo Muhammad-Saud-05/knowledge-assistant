@@ -1453,6 +1453,68 @@ cut to 4,211 by dropping two chunks: 44.2 s at k=5, 30.8 s with the budget) is i
 one question. Retrieval time is about 3 to 5 s for every setting (reranking 30 passages; one k=5 run took
 9.6 s), so the differences come from how much source text the language model reads before it writes.
 
+## Answer-level check
+
+Dated 2026-11-14. The full pipeline was run **with the default settings** (configuration C: vector top 30,
+rerank, top 5 sources in the prompt; `llama3.2:3b`; the unchanged system prompt) on the 30 development
+main-table questions and the 9 development unanswerable questions: **39 questions, one at a time**, with
+`python -m eval.run_answers` (code at commit `94e4f67`). The holdout was not touched. Neither the prompt nor any
+code was changed in response to the results. The answers, with the sources shown for each, are saved in the
+git-ignored folder `eval/answers/` (they contain document text); this report has counts only.
+
+**Definitions.** *Refused* means the answer is exactly the not-found sentence (`I couldn't find this in your
+documents.`, ignoring surrounding whitespace). *Has a citation* means at least one `[n]` in the text. *All
+citations valid* means it has at least one citation and every cited number is among the 5 sources provided.
+Percentages are always given with the count and n.
+
+| measure | count / n |
+|---|---|
+| Unanswerable questions: correctly refused (the exact not-found sentence) | 3/9 (33.3%) |
+| Unanswerable questions: answered with at least one citation anyway | 2/9 (22.2%) |
+| Unanswerable questions: answered without any citation | 4/9 (44.4%) |
+| Answerable questions: wrongly refused (exact sentence) | 0/30 (0.0%) |
+| Answerable questions: answered | 30/30 (100.0%) |
+| Answers (not refused) with at least one citation, all questions | 25/36 (69.4%) |
+| Answers with at least one citation and every cited number among the sources, all questions | 24/36 (66.7%) |
+| of the answerable questions' answers: with at least one citation | 23/30 (76.7%) |
+| of the answerable questions' answers: all citations valid | 22/30 (73.3%) |
+| of the unanswerable questions' answers: with at least one citation | 2/6 (33.3%) |
+| of the unanswerable questions' answers: all citations valid | 2/6 (33.3%) |
+
+Time (including retrieval, all 39 questions): time to first token median 42.5 s, 95th percentile 62.3 s; total
+time median 55.6 s, 95th percentile 115.2 s. One citation number was outside the sources provided (`[0]`, in the
+answer to q53).
+
+**What the counts show, and what they do not.**
+
+- **The model refused only 3 of the 9 unanswerable questions.** The other 6 were answered: 2 with a citation
+  and 4 with no citation at all (the app shows its "no citations" warning for those). This is the weakest
+  result of the check: the instruction to refuse when the sources do not contain the answer was followed
+  for one question in three. It agrees with the Phase 2 calibration finding that no score cutoff separates
+  the two groups, so the refusal decision currently rests entirely on the model.
+- **No answerable question was refused with the exact sentence (0/30), but the exact-sentence measure
+  understates refusals.** For q03 the model answered "Unfortunately, I couldn't find this in your
+  documents.", a refusal in all but the exact wording; it is counted here as an answer without a citation, and
+  the app's own not-found check does not recognise it either. Read with that answer, 1 of 30 answerable
+  questions was in effect refused.
+- **Citations are often missing even when an answer is given.** 7 of the 30 answerable answers have no citation
+  (one of them is the q03 refusal above). Among all 36 answers that were not refused, 25 have a citation and 24
+  have citations that are all valid.
+- **Citation validity is not correctness.** A citation can point at a real source that does not support the
+  sentence. This check does not look at that.
+- **Time.** First words took a median of 42.5 s on this CPU, longer than the 31 to 39 s measured earlier for the
+  same pipeline, with sources of varying length; the spread is large (see the context-size section).
+
+**How small this is.** n is 39 in total, 30 and 9 per group. One unanswerable question moves a percentage by 11
+points, and one answerable question by 3. The results describe this question set and this model and say
+little beyond it.
+
+**Not graded.** Whether the answers are *correct* has **not** been assessed. Answers were graded only for the
+sample that is being graded by hand: 12 answerable questions chosen at random (seed 7) plus every unanswerable
+question that was answered instead of refused (6), written to `eval/answers/to_grade.md` (18 answers, each
+with its sources and a blank grade line). Nothing was graded by the assistant, and the figures above come
+only from mechanical checks.
+
 ## Suspected label issues
 
 Nothing was changed in the question file. Candidates noticed in Phase 2:
