@@ -13,3 +13,6 @@ data/
 
 # Front end build output
 web/dist/
+
+# Answer-level check output (contains document text)
+eval/answers/
