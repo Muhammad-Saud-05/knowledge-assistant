@@ -25,7 +25,9 @@ from .questions import QUESTIONS_FILE, Question, load_questions, select_set, sel
 from .report import QuestionRun, RankEntry, Results, render_report, results_from_json, results_to_json
 from .validate_questions import Corpus, doc_passes_filters, load_corpus, to_search_filters
 
-KNOWN_MODES = ("vector", "keyword", "hybrid")
+from src.retrieval.hybrid import ALL_MODES, parse_mode
+
+KNOWN_MODES = ALL_MODES
 DEPTH = 10  # MRR@10 needs the top ten
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
@@ -95,14 +97,39 @@ def run_questions(
     return results
 
 
-def build_search_fn(conn, embedder, candidates: int) -> SearchFn:
+def build_search_fn(conn, embedder, candidates: int, reranker=None, rerank_candidates: int = 30, bm25=None) -> SearchFn:
     from src.retrieval.hybrid import search
 
     def run(question: Question, mode: str) -> list[RetrievedChunk]:
         filters = to_search_filters(question.filters) if question.filters else None
-        return search(conn, embedder, question.question, k=DEPTH, mode=mode, filters=filters, candidates=candidates)
+        _, rerank = parse_mode(mode)
+        return search(
+            conn, embedder, question.question, k=DEPTH, mode=mode, filters=filters, candidates=candidates,
+            reranker=reranker if rerank else None, rerank_candidates=rerank_candidates, bm25=bm25,
+        )
 
     return run
+
+
+def load_reranker(model_name: str | None, input_style: str):
+    """Create the reranker and load it now, so loading is never counted in a question's time."""
+    from src.retrieval.rerank import Reranker
+
+    reranker = Reranker(model_name=model_name, input_style=input_style)
+    started = perf_counter()
+    reranker.load()
+    load_seconds = perf_counter() - started
+    parameters = sum(p.numel() for p in reranker.model.model.parameters())
+    info = {
+        "model": reranker.model_name,
+        "input_style": input_style,
+        "max_length": reranker.max_length,
+        "parameters_millions": round(parameters / 1e6, 1),
+        "float32_mb": round(parameters * 4 / 1e6),
+        "load_seconds": round(load_seconds, 2),
+        "activation": "raw model output (no sigmoid)",
+    }
+    return reranker, info
 
 
 def _git_commit() -> str | None:
@@ -123,13 +150,17 @@ def result_filename(modes: list[str], split: str, when: datetime, question_set: 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate retrieval on the question set.")
-    parser.add_argument("--modes", default="vector,keyword,hybrid", help="comma-separated: vector, keyword, hybrid")
+    parser.add_argument("--modes", default="vector,keyword,hybrid", help="comma-separated modes: " + ", ".join(ALL_MODES))
     parser.add_argument("--split", choices=("all", "dev", "holdout"), default="dev", help="which questions (default dev)")
     parser.add_argument("--set", dest="question_set", choices=("v1", "v2"), default="v2",
                         help="v1 = the frozen original 40 questions, v2 = v1 plus the later additions (default v2)")
     parser.add_argument("--confirm-holdout", action="store_true", help="allow the holdout split (final check only)")
     parser.add_argument("--k", type=int, default=5, help="cutoff for the win/loss and missed-question lists (default 5)")
     parser.add_argument("--candidates", type=int, default=30, help="candidates per method for hybrid (default 30)")
+    parser.add_argument("--rerank-candidates", type=int, default=30, help="candidates given to the reranker (default 30)")
+    parser.add_argument("--reranker-model", default=None, help="cross-encoder model (default: RERANKER_MODEL or the built-in default)")
+    parser.add_argument("--input-style", choices=("plain", "with_context"), default="plain", help="what the reranker reads (default plain)")
+    parser.add_argument("--baseline", default=None, help="compare every other mode with this one (paired differences, mode minus baseline)")
     parser.add_argument("--out", type=Path, default=Path("eval/results"), help="folder for the result JSON")
     parser.add_argument("--questions", type=Path, default=QUESTIONS_FILE, help="question file")
     parser.add_argument("--markdown", type=Path, help="also write the tables to this file")
@@ -140,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         modes = parse_modes(args.modes)
+        if args.baseline is not None and args.baseline not in modes and not args.from_json:
+            raise EvalError(f"--baseline {args.baseline!r} must be one of the modes being run")
         check_split_allowed(args.split, args.confirm_holdout)
         questions = select_split(select_set(load_questions(args.questions), args.question_set), args.split)
 
@@ -149,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
             ids = set(next(iter(results.values())))
             questions = [q for q in questions if q.id in ids]
             modes = list(results)
-            report = render_report(questions, results, modes, args.k)
+            report = render_report(questions, results, modes, args.k, baseline=args.baseline)
             print(report)
             return 0
 
@@ -163,9 +196,18 @@ def main(argv: list[str] | None = None) -> int:
             chunks = conn.execute("SELECT count(*) FROM chunks").fetchone()[0]
 
             embedder = Embedder()
-            if any(m in ("vector", "hybrid") for m in modes):
+            if any(parse_mode(m)[0] != "keyword" for m in modes):
                 embedder.embed_query("warm up")  # load the model before anything is timed
-            search_fn = build_search_fn(conn, embedder, args.candidates)
+            reranker, reranker_info = None, None
+            if any(parse_mode(m)[1] for m in modes):
+                reranker, reranker_info = load_reranker(args.reranker_model, args.input_style)
+            bm25 = None
+            if any(parse_mode(m)[0] == "hybrid-bm25" for m in modes):
+                from src.retrieval.bm25 import Bm25Searcher
+
+                bm25 = Bm25Searcher(conn)
+                bm25.warm_up()  # build the in-memory index before anything is timed
+            search_fn = build_search_fn(conn, embedder, args.candidates, reranker, args.rerank_candidates, bm25)
             results = run_questions(questions, modes, search_fn, corpus)
     except EvalError as error:
         print(f"Cannot run the evaluation: {error}", file=sys.stderr)
@@ -186,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
         "questions_file": str(args.questions.name),
         "questions_sha256": hashlib.sha256(args.questions.read_bytes()).hexdigest(),
         "git_commit": _git_commit(),
+        "rerank_candidates": args.rerank_candidates,
+        "reranker": reranker_info,
         "note": "ranked chunk ids and scores only; no chunk text",
     }
     args.out.mkdir(parents=True, exist_ok=True)

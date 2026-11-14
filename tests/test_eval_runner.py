@@ -327,3 +327,57 @@ def test_result_filename_marks_v2_but_keeps_v1_names():
     assert result_filename(["vector"], "dev", when) == "eval_20261114T093005Z_vector_dev.json"
     assert result_filename(["vector"], "dev", when, "v1") == "eval_20261114T093005Z_vector_dev.json"
     assert result_filename(["vector", "hybrid"], "dev", when, "v2") == "eval_20261114T093005Z_v2_vector-hybrid_dev.json"
+
+
+# ------------------------------------------------------- Phase 2 configurations
+
+
+def test_parse_modes_accepts_the_rerank_and_bm25_configurations():
+    names = "hybrid,hybrid+rerank,vector+rerank,hybrid-bm25,hybrid-bm25+rerank"
+    assert parse_modes(names) == names.split(",")
+    with pytest.raises(EvalError):
+        parse_modes("hybrid+rank")
+
+
+def test_build_search_fn_passes_the_reranker_only_to_rerank_modes(monkeypatch):
+    calls = []
+
+    def fake_search(conn, embedder, query, **kwargs):
+        calls.append(kwargs)
+        return []
+
+    monkeypatch.setattr("src.retrieval.hybrid.search", fake_search)
+    fn = run_eval.build_search_fn(None, None, 30, reranker="RR", rerank_candidates=20, bm25="BM")
+    fn(QUESTIONS[0], "hybrid")
+    fn(QUESTIONS[0], "hybrid-bm25+rerank")
+    assert calls[0]["reranker"] is None and calls[0]["mode"] == "hybrid"
+    assert calls[1]["reranker"] == "RR" and calls[1]["rerank_candidates"] == 20 and calls[1]["bm25"] == "BM"
+    assert calls[1]["k"] == run_eval.DEPTH
+
+
+def test_baseline_pairs_are_mode_minus_baseline():
+    from eval.report import baseline_pairs
+
+    assert baseline_pairs(["hybrid", "hybrid+rerank", "vector+rerank"], "hybrid") == [
+        ("hybrid+rerank", "hybrid"),
+        ("vector+rerank", "hybrid"),
+    ]
+
+
+def test_extended_paired_table_adds_hit1_and_doc_hit(results):
+    plain = paired_table(QUESTIONS, results, [("hybrid", "vector")])
+    extended = paired_table(QUESTIONS, results, [("hybrid", "vector")], extended=True)
+    assert "hit@1" not in plain and "doc_hit@5" not in plain
+    assert "hit@1" in extended and "doc_hit@5" in extended and "hit@5" in extended
+    # hit@1: hybrid hits q01, q02, but not q03 (needs both docs, only 1 slot at rank 1... same as vector)
+    hit1 = next(l for l in extended.splitlines() if "hit@1" in l)
+    assert "hybrid - vector" in hit1
+
+
+def test_render_report_with_a_baseline_compares_each_mode_with_it(results):
+    from eval.report import render_report
+
+    text = render_report(QUESTIONS, results, MODES, 5, baseline="hybrid")
+    assert "| vector - hybrid |" in text and "| keyword - hybrid |" in text
+    assert "| hybrid - vector |" not in text
+    assert "doc_hit@5" in text

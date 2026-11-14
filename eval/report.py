@@ -245,7 +245,15 @@ def default_pairs(modes: list[str]) -> list[tuple[str, str]]:
     return [("hybrid", m) for m in modes if m != "hybrid"]
 
 
-def paired_table(questions: list[Question], results: Results, pairs: list[tuple[str, str]], groups=None) -> str:
+def baseline_pairs(modes: list[str], baseline: str) -> list[tuple[str, str]]:
+    """(mode, baseline) pairs, to be read as mode minus baseline."""
+    return [(m, baseline) for m in modes if m != baseline]
+
+
+def paired_table(
+    questions: list[Question], results: Results, pairs: list[tuple[str, str]], groups=None, extended: bool = False
+) -> str:
+    """Paired bootstrap differences. `extended` adds hit@1 and doc_hit@5 to hit@5 and MRR@10."""
     qs = headline_questions(questions)
     rows = []
     for a, b in pairs:
@@ -256,10 +264,16 @@ def paired_table(questions: list[Question], results: Results, pairs: list[tuple[
             if not group:
                 continue
             sa, sb = _scores(group, results, a), _scores(group, results, b)
-            for metric, va, vb in (
+            measures = [
                 ("hit@5", _hit_values(sa), _hit_values(sb)),
                 ("MRR@10", [s.mrr10 for s in sa], [s.mrr10 for s in sb]),
-            ):
+            ]
+            if extended:
+                measures += [
+                    ("hit@1", _hit_values(sa, 1), _hit_values(sb, 1)),
+                    ("doc_hit@5", [1.0 if s.doc_hit5 else 0.0 for s in sa], [1.0 if s.doc_hit5 else 0.0 for s in sb]),
+                ]
+            for metric, va, vb in measures:
                 diff, low, high = paired_bootstrap_ci(va, vb)
                 better = sum(x > y for x, y in zip(va, vb))
                 worse = sum(x < y for x, y in zip(va, vb))
@@ -330,12 +344,17 @@ def top1_tables(questions: list[Question], results: Results, modes: list[str]) -
 def timing_note(modes: list[str]) -> str:
     return (
         "Scores are not comparable across modes: vector = cosine similarity, keyword = ts_rank_cd, "
-        "hybrid = reciprocal-rank-fusion score (a ranking value, not a similarity)."
+        "hybrid = reciprocal-rank-fusion score (a ranking value, not a similarity); modes ending in "
+        "+rerank report the reranker's raw output (a logit, not a probability); hybrid-bm25 fuses "
+        "the same way as hybrid."
     )
 
 
-def render_report(questions: list[Question], results: Results, modes: list[str], k: int = 5) -> str:
-    pairs = default_pairs(modes)
+def render_report(
+    questions: list[Question], results: Results, modes: list[str], k: int = 5, baseline: str | None = None
+) -> str:
+    pairs = baseline_pairs(modes, baseline) if baseline else default_pairs(modes)
+    extended = baseline is not None
     headline = headline_questions(questions)
     by_difficulty = [(f"{d}", [q for q in headline if q.difficulty == d]) for d in DIFFICULTIES]
     by_category = [(c, [q for q in headline if q.category == c]) for c in HEADLINE_CATEGORIES]
@@ -349,8 +368,8 @@ def render_report(questions: list[Question], results: Results, modes: list[str],
         f"## By category\n\n{category_table(questions, results, modes)}",
         f"## By difficulty bucket (lexical overlap of the question with its best passage)\n\n{difficulty_table(questions, results, modes)}",
         f"## Paired differences (same questions resampled for both modes)\n\n{paired_table(questions, results, pairs)}\n\n"
-        f"### Paired differences by category\n\n{paired_table(questions, results, pairs, groups=by_category)}\n\n"
-        f"### Paired differences by difficulty bucket\n\n{paired_table(questions, results, pairs, groups=by_difficulty)}",
+        f"### Paired differences by category\n\n{paired_table(questions, results, pairs, groups=by_category, extended=extended)}\n\n"
+        f"### Paired differences by difficulty bucket\n\n{paired_table(questions, results, pairs, groups=by_difficulty, extended=extended)}",
         f"## Wins and losses per question\n\n{win_loss_lists(questions, results, pairs, k)}",
         f"## Questions each mode missed at k={k}\n\n{missed_lists(questions, results, modes, k)}",
         f"## Filtered questions: filter-correctness check\n\n{filtered_table(questions, results, modes)}",
