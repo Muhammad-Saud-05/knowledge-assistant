@@ -175,3 +175,44 @@ def aggregate(scores: list[QuestionScore]) -> dict:
 def count_text(hits: int, n: int) -> str:
     """'27/34 (79.4%)': always show the counts next to a percentage."""
     return f"{hits}/{n} ({100 * hits / n:.1f}%)" if n else "0/0 (n/a)"
+
+
+def median(values: list[float]) -> float:
+    if not values:
+        return float("nan")
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    return ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2
+
+
+def percentile(values: list[float], share: float) -> float:
+    """Nearest-rank percentile (share between 0 and 1), e.g. 0.95 for the 95th."""
+    if not values:
+        return float("nan")
+    ordered = sorted(values)
+    return ordered[min(len(ordered) - 1, max(0, math.ceil(share * len(ordered)) - 1))]
+
+
+def paired_bootstrap_ci(
+    a: list[float], b: list[float], resamples: int = 1000, seed: int = 7, level: float = 0.95
+) -> tuple[float, float, float]:
+    """The mean of (a - b) over the same questions, with a percentile bootstrap interval.
+
+    `a` and `b` are per-question values for two systems, in the same question order. Each
+    resample draws the SAME question indices for both, so question difficulty cancels out:
+    this answers "is system A better than B on these questions?", which two separate
+    intervals that overlap cannot. Returns (mean difference, low, high).
+    """
+    if len(a) != len(b):
+        raise ValueError("both systems need a value for the same questions")
+    if not a:
+        nan = float("nan")
+        return (nan, nan, nan)
+    differences = [x - y for x, y in zip(a, b)]
+    rng = random.Random(seed)
+    n = len(differences)
+    means = sorted(mean([differences[rng.randrange(n)] for _ in range(n)]) for _ in range(resamples))
+    tail = (1 - level) / 2
+    low = means[max(0, math.floor(tail * resamples))]
+    high = means[min(resamples - 1, math.ceil((1 - tail) * resamples) - 1)]
+    return (mean(differences), low, high)
