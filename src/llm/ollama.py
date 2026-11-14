@@ -44,6 +44,7 @@ class OllamaLLM:
         temperature: float = TEMPERATURE,
         client: httpx.Client | None = None,
         keep_alive: str | None = None,
+        json_output: bool = False,
     ):
         load_dotenv(_ENV_FILE)  # variables already set in the environment win
         self.host = (host or os.environ.get("OLLAMA_HOST") or DEFAULT_HOST).rstrip("/")
@@ -51,13 +52,15 @@ class OllamaLLM:
         self.keep_alive = keep_alive or os.environ.get("OLLAMA_KEEP_ALIVE") or DEFAULT_KEEP_ALIVE
         self.num_ctx = num_ctx
         self.temperature = temperature
+        # True asks Ollama to reply with valid JSON only (its "format": "json" option).
+        self.json_output = json_output
         # A client can be passed in for testing (httpx.MockTransport).
         self._client = client or httpx.Client(timeout=TIMEOUT)
 
     # ------------------------------------------------------------ requests
 
     def _payload(self, system: str, user: str, stream: bool) -> dict:
-        return {
+        payload = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system},
@@ -67,6 +70,9 @@ class OllamaLLM:
             "keep_alive": self.keep_alive,
             "options": {"num_ctx": self.num_ctx, "temperature": self.temperature},
         }
+        if self.json_output:
+            payload["format"] = "json"
+        return payload
 
     def _unreachable(self) -> LLMUnavailableError:
         return LLMUnavailableError(
