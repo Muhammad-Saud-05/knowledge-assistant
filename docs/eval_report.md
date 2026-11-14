@@ -355,6 +355,9 @@ Only what the numbers support, on 30 development questions in the main table (8 
 - **The holdout has now been run once** (see "Holdout (run once)"), for A and C only, and is spent: it
   must not be used again to choose between configurations.
 - **Timing** comes from a single run on one machine and varies from run to run.
+- **The Phase 2b decision rule had no latency limit and no bound on ranking quality.** It selected a configuration
+  (L) that was about 10 s slower per question and lower on MRR@10 for low-overlap questions; see the addendum of
+  2026-11-14.
 
 ## Phase 2 pre-registration
 
@@ -1367,11 +1370,35 @@ result that has costs (below).
 
 ## Adopting L in the application
 
+*Superseded on 2026-11-14: L was made the default for a few hours and then reverted; see the addendum below. The description that follows is what was done at the time.*
+
 Because the rule adopted L, it is the default for `ask`, `/api/ask` (mode `default`) and the CLI, with
 `DECOMPOSITION_ENABLED=false` returning to C, and `RERANKER_ENABLED=false` returning to plain hybrid. The
 merged list is what the `sources` event carries and what citations are validated against; the model still
 answers the original question. A failure to split (Ollama unreachable, a malformed reply) falls back to
 searching with the whole question.
+
+## Addendum, 2026-11-14: why L is not the default
+
+The pre-registered rule selected L, and that verdict stands as written above: L met both conditions. After
+seeing the full result, the default was nevertheless kept at C (vector top 30, rerank, top 5 into the prompt;
+`DECOMPOSITION_ENABLED` defaults to `false`). L stays available as an opt-in: the API mode `rerank-split-llm`
+works whatever the setting is, the web app has an unchecked-by-default option "Compare across documents
+(slower)" that sends it, and `DECOMPOSITION_ENABLED=true` makes it the default. The reasons:
+
+- The rule had **no latency limit**, and L added about **10 s per question** (median search time 12.5 s
+  against 2.7 s for C), on top of a first word that already takes tens of seconds on this CPU.
+- L **lowered MRR@10 on the low-overlap questions** by -0.173, a paired interval that excludes zero
+  (-0.38 to 0.00, 10 questions).
+- The model **split 28 of 30 questions**, including questions that ask a single thing, so most of its cost
+  is paid by questions that gain nothing.
+
+**This is a limitation of the decision rule.** The rule asked only for a coverage gain and for no category to
+lose more than one question at hit@5. It set no bound on time per question and none on MRR@10 or hit@1, so
+a configuration could pass it while being much slower and worse at ranking. The default was therefore chosen
+by judgement after the result was seen, not by the rule, and the rule's verdict has not been edited. A better
+rule would have included a latency limit and a no-worse condition on MRR@10. The holdout was not used to
+test L (it had already been run for A and C, and L was selected on development data).
 
 ## Phase 2b results: context size and time to first token
 

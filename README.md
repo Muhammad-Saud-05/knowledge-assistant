@@ -83,15 +83,15 @@ The database tests create a temporary `kb_test` database on the same server and 
 
 ## Search
 
-`python -m src.search "your query"` searches the stored documents with no language model, so you can see exactly what would be handed to one. By default it shows the three modes and the reranked mode below, then a table of where each chunk ranked in each (the reranked view is left out when `RERANKER_ENABLED=false`). It does not split questions, so it stays model-free; `--mode rerank-split-llm` shows the default `ask` search and does call the language model.
+`python -m src.search "your query"` searches the stored documents with no language model, so you can see exactly what would be handed to one. By default it shows the three modes and the reranked mode below, then a table of where each chunk ranked in each (the reranked view is left out when `RERANKER_ENABLED=false`). It does not split questions, so it stays model-free; `--mode rerank-split-llm` shows the opt-in split search and does call the language model.
 
 | Mode | How it finds chunks | Good at |
 | --- | --- | --- |
 | `vector` | Compares meaning: the query and every chunk are turned into vectors and the nearest are returned. | Paraphrases that share no words with the notes |
 | `keyword` | Full-text match on the words (stemmed, stop words ignored). A chunk matches if it contains *any* of the query's words; chunks with more of them, close together, rank higher. | Exact things: `429`, `Retry-After`, `HEAD~1`, rare names |
 | `hybrid` | Takes the top 30 from each of the two above and merges them (see below), then returns the best few. | Both at once. This is what `ask` uses when the reranker is switched off. |
-| `vector+rerank` | Takes the 30 nearest chunks by vector search and reorders them with a cross-encoder that reads the question and each chunk together (see below). | Putting the right passage first. What `ask` uses when question splitting is switched off. |
-| `rerank-split-llm` | Asks the local language model to split a question that asks several things into sub-questions, runs `vector+rerank` for each, and merges the lists (see below). | Questions that need passages from different documents. **The default for `ask` and the API.** |
+| `vector+rerank` | Takes the 30 nearest chunks by vector search and reorders them with a cross-encoder that reads the question and each chunk together (see below). | Putting the right passage first. **The default for `ask` and the API.** |
+| `rerank-split-llm` | Asks the local language model to split a question that asks several things into sub-questions, runs `vector+rerank` for each, and merges the lists (see below). | Questions that need passages from different documents. Opt-in and slower: pick it by name, tick "Compare across documents (slower)" in the web app, or set `DECOMPOSITION_ENABLED=true` to make it the default. |
 
 ```powershell
 python -m src.search "HTTP 429 Retry-After"                       # all modes side by side
@@ -109,14 +109,14 @@ Each result shows the title, page or heading, its rank in the vector and keyword
 
 Vector similarities (about 0.4 to 0.8) and keyword ranks are on different scales, so adding them would let one method drown out the other. Instead the lists are merged with **reciprocal rank fusion**, which ignores the scores and uses only positions: a chunk earns `1 / (60 + rank)` from each list it appears in, and the sums decide the order. A chunk that both methods rank near the top wins, and a chunk that only one method found can still make the list. For example, a chunk ranked 1st by keyword and 2nd by vector scores `1/61 + 1/62`, about 0.0325, while one found only by vector at rank 1 scores `1/61`, about 0.0164. The fused score only says how high a chunk ranked. It is **not** a similarity and cannot tell you whether anything relevant was found.
 
-### Reranking, and splitting questions (the default)
+### Reranking (the default) and splitting questions (opt-in)
 
-The default search is configuration **L** from `docs/eval_report.md`, built on configuration **C**:
+The default search is configuration **C** from `docs/eval_report.md`; configuration **L**, built on it, is opt-in:
 
 - **C (reranking).** The 30 nearest chunks by vector search are reordered by the cross-encoder `cross-encoder/ms-marco-MiniLM-L-6-v2` (22.7 million parameters, about 91 MB, downloaded once from Hugging Face on first use, run on the CPU) and the top 5 go into the prompt. Its score is the model's raw output (a logit, not a probability).
-- **L (question splitting).** Before searching, the local language model (`llama3.2:3b`, temperature 0) splits a question that asks several things into up to 3 standalone sub-questions. Each one is searched and reranked on its own and the lists are merged by taking the best chunk of each in turn (round-robin, no duplicates). The model still answers your original question. If the split fails for any reason, the whole question is searched as in C.
+- **L (question splitting, opt-in).** Before searching, the local language model (`llama3.2:3b`, temperature 0) splits a question that asks several things into up to 3 standalone sub-questions. Each one is searched and reranked on its own and the lists are merged by taking the best chunk of each in turn (round-robin, no duplicates). The model still answers your original question. If the split fails for any reason, the whole question is searched as in C.
 
-Two switches in `.env` go back: `DECOMPOSITION_ENABLED=false` gives C, and `RERANKER_ENABLED=false` gives plain hybrid search (the hybrid code path is unchanged). The API loads the reranker once at startup (about 3 seconds) and refuses to start, with a message, if it cannot be loaded.
+Two switches in `.env`: `RERANKER_ENABLED=false` gives plain hybrid search (the hybrid code path is unchanged), and `DECOMPOSITION_ENABLED=true` makes L the default instead of C (it is `false` unless you set it). L can always be asked for by name (`rerank-split-llm`) whatever this is set to. The API loads the reranker once at startup (about 3 seconds) and refuses to start, with a message, if it cannot be loaded.
 
 What was measured on the evaluation questions (hybrid is A, vector plus reranker is C; the main table has questions of the types exact term, paraphrase and multi-document):
 
@@ -134,11 +134,26 @@ The splitting step (L) was compared with C on the development set only, chosen b
 | C reranked | 12/30 | 21/30 (70.0%) | 0.693 | 0.750 | 2.7 s |
 | L split + rerank | 10/30 | 23/30 (76.7%) | 0.632 | 0.938 | 12.5 s |
 
-L passed the rule: coverage +0.188 (paired interval 0.06 to 0.38) and multi-document hit@5 from 4/8 to 7/8. Its costs: MRR@10 and hit@1 were lower (not clearly: paired -0.061, interval -0.15 to 0.03), two single-document questions that C answered were lost, the language model split 28 of 30 questions including ones that ask a single thing, and the time before the sources are found rose by about 10 seconds per question. The holdout numbers in the table above are for C, not L: L was chosen after the holdout had been used, so it has not been tested on it.
+L passed the rule: coverage +0.188 (paired interval 0.06 to 0.38) and multi-document hit@5 from 4/8 to 7/8, so the rule selected L (see the addendum below for why it is not the default). Its costs: MRR@10 and hit@1 were lower (not clearly: paired -0.061, interval -0.15 to 0.03), two single-document questions that C answered were lost, the language model split 28 of 30 questions including ones that ask a single thing, and the time before the sources are found rose by about 10 seconds per question. The holdout numbers in the table above are for C, not L: L was chosen after the holdout had been used, so it has not been tested on it.
 
 hit@5 means a relevant passage is among the first five; MRR@10 rewards putting it higher. On development, C ranked relevant passages clearly higher, while the difference in finding one in the top five is not clear. The holdout (run once, with n = 9) points the same way but shows no clear difference and no hit@1 gain. Several questions share passages and the questions were written by the person who built the system, so treat these as indications for this collection, not general results.
 
-**What splitting costs.** One language-model call (median 4.4 s, 95th percentile 8.0 s) plus one rerank for each sub-question: median 12.5 s of search time per question in the evaluation, against 2.7 s for C. Set `DECOMPOSITION_ENABLED=false` if that is too slow.
+**Addendum, 2026-11-14: why L is not the default.** The pre-registered rule selected L, and that verdict stands in `docs/eval_report.md` as written. L is nonetheless not the default, because the rule had no latency limit: L added about 10 s per question (median 12.5 s against 2.7 s for C), it lowered MRR@10 on the low-overlap questions (-0.173, an interval that excludes zero), and the model split 28 of 30 questions, including ones that ask a single thing. This is a limitation of the decision rule, which should have bounded the time cost and the damage to ranking quality; the default was chosen by judgement after seeing the result, not by the rule. Use L when a question really spans documents.
+
+**What splitting costs.** One language-model call (median 4.4 s, 95th percentile 8.0 s) plus one rerank for each sub-question: median 12.5 s of search time per question in the evaluation, against 2.7 s for C.
+
+**How many sources go into the prompt (k).** The default stays k = 5. Fewer sources are faster but find the answer less often. Retrieval quality is on the 30 development questions in the main table (hit = a relevant passage for every required document is among the sources); the time is the median time to the first word of the answer for 5 new questions with the full pipeline on this CPU (retrieval, which is about 3 to 5 s for every row, included):
+
+| Sources in the prompt | Questions answered by the sources (hit) | Multi-document coverage (n = 8) | Median time to first word | Range |
+| --- | --- | --- | --- | --- |
+| k = 3 | 17/30 (56.7%) | 0.625 | 25.2 s | 21.6 to 36.7 s |
+| k = 4 | 19/30 (63.3%) | 0.688 | 30.6 s | 18.3 to 35.3 s |
+| k = 5 (default) | 21/30 (70.0%) | 0.750 | 38.6 s | 22.8 to 52.5 s |
+| up to 5, within 4,500 characters of source text | 18/30 (60.0%) | 0.688 | 33.8 s | 26.0 to 41.2 s |
+
+Each source dropped costs about two development questions and saves several seconds, but five questions cannot separate small differences: the spread inside each row is as large as the gaps between rows. For four of the five questions the 4,500-character budget kept exactly the same five chunks as k = 5, yet their first words differed from k = 5's by up to 11 s, in both directions; that is the noise. The budget is not implemented in the application. The numbers come from `docs/eval_report.md`.
+
+**Timing measurements need a cache check.** Ollama caches the processed prompt, and the sources come first in the prompt, so a prompt that repeats, or starts with the same sources as an earlier one, is processed far faster. A first measurement of the settings above gave first words in 4 to 6 s for the budget setting only because four of its prompts were identical to ones just run at k = 5; those numbers measured the cache, not the context size, and were discarded. The table above comes from a repeat in which every request began with a unique random prefix so that none could reuse another's cache. In everyday use this means asking the same question again is almost instant, but a new question always pays the full cost of reading its sources.
 
 **What reranking costs.** Reranking 30 passages on the CPU takes about 2.5 to 3 seconds per question (median search time in the evaluation: 92 ms for hybrid, 2.9 s for C; through the API, median retrieval 0.14 s against 2.55 s). That is small next to the language model, which must read all the sources before it writes: in a measurement of five new questions through `POST /api/ask`, the median time to the first token was 33.9 s with `RERANKER_ENABLED=false` and 31.3 s with the reranker. The reranker's extra 2.4 s was hidden by the language model's own variation, which depended mostly on how long the five chosen passages were (a prompt of about 10,000 characters took 72 s; one of about 2,600 took 21 s), and the reranked top five happened to be shorter on these questions. Five questions on one machine is a rough comparison, not a benchmark.
 
@@ -176,7 +191,7 @@ Options:
 
 ```powershell
 python -m src.ask "your question" --k 8              # retrieve 8 sources instead of 5
-python -m src.ask "your question" --mode hybrid      # search mode: vector, keyword, hybrid, vector+rerank or rerank-split-llm (default: rerank-split-llm; vector+rerank if DECOMPOSITION_ENABLED=false; hybrid if RERANKER_ENABLED=false)
+python -m src.ask "your question" --mode hybrid      # search mode: vector, keyword, hybrid, vector+rerank or rerank-split-llm (default: vector+rerank, or hybrid if RERANKER_ENABLED=false; rerank-split-llm is the opt-in split search)
 python -m src.ask "your question" --model llama3.2:3b # use a different Ollama model
 python -m src.ask "your question" --show-prompt      # print the exact prompt sent to the model
 python -m src.ask "your question" --type pdf --since 2026-10-01 --path-prefix sample_corpus/  # filters, as in search
@@ -191,7 +206,7 @@ Settings (optional, in `.env`; the values shown are the defaults):
 | `OLLAMA_HOST` | `http://127.0.0.1:11434` | Where Ollama is listening |
 | `OLLAMA_MODEL` | `llama3.2:3b` | Which model answers |
 | `RERANKER_ENABLED` | `true` | `true`: vector search reranked by the cross-encoder; `false`: plain hybrid search |
-| `DECOMPOSITION_ENABLED` | `true` | `true`: questions that ask several things are split into sub-questions first (needs the reranker); `false`: search with the whole question |
+| `DECOMPOSITION_ENABLED` | `false` | `true`: makes the slower split-into-sub-questions search the default (needs the reranker); `false`: search with the whole question. The mode `rerank-split-llm` works either way |
 | `RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Which cross-encoder reranks |
 
 ### Prompt injection: what is and is not defended
@@ -225,7 +240,7 @@ npm run dev
 
 Then open <http://localhost:5173>. The dev server forwards `/api` to the back end, so the page and the API look like one site to the browser. Interactive API documentation is at <http://127.0.0.1:8000/docs>.
 
-A brand-new question takes roughly 10 to 70 seconds to show its first word on a CPU (reranking adds about 2.5 seconds of that and splitting a question about 10 more; the rest depends mostly on how much text the sources contain), because the model must read all the sources before writing. The sources appear first, so you can see what is being read. Asking the same question again is almost instant, because Ollama reuses its work on an identical prompt.
+A brand-new question takes roughly 10 to 70 seconds to show its first word on a CPU (reranking adds about 2.5 seconds of that and, if you opt in, splitting a question about 10 more; the rest depends mostly on how much text the sources contain), because the model must read all the sources before writing. The sources appear as soon as they are found, with a line saying that the model is reading them ("on this CPU the first words can take 30 to 40 seconds"), so you can see what is being read. Ticking "Compare across documents (slower)" under the question box asks for the split-into-sub-questions search for that question; it is unticked by default. Asking the same question again is almost instant, because Ollama reuses its work on an identical prompt.
 
 Front-end checks (run in `web/`): `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`. (A bare `npx tsc --noEmit` checks nothing with this project layout; use `npm run typecheck`.)
 
@@ -239,7 +254,7 @@ Front-end checks (run in `web/`): `npm test`, `npm run typecheck`, `npm run lint
 | `DELETE` | `/api/documents/{id}` | Delete a document and its chunks, and its uploaded file if it came from an upload. |
 | `POST` | `/api/ask` | Answer a question, streamed as Server-Sent Events. |
 
-`POST /api/ask` takes JSON: `question` (1 to 1000 characters), `k` (1 to 10, default 5), `mode` (`default`, `vector`, `keyword`, `hybrid`, `vector+rerank` or `rerank-split-llm`; `default` means split-and-rerank, or `vector+rerank` when `DECOMPOSITION_ENABLED=false`, or hybrid when `RERANKER_ENABLED=false`; asking by name for a mode that is switched off gives a 400) and optional `filters` (`source_types`, `date_from`, `date_to`, `path_prefix`). The reply is a stream of events, always in this order: an optional `status` (`queued` while another answer is being written), then `sources` (the retrieved chunks numbered 1 to n in the order they are given to the model, which is the merged, reranked order, with their full text, `rerank_rank` and `rerank_score`; both are `null` without reranking), then one `token` per piece of the answer, then `done` (full text, citation checks and timings). If something goes wrong you get a single short `error` event instead. Only one answer is generated at a time; extra requests wait their turn. From PowerShell, `curl.exe -N` shows the raw stream:
+`POST /api/ask` takes JSON: `question` (1 to 1000 characters), `k` (1 to 10, default 5), `mode` (`default`, `vector`, `keyword`, `hybrid`, `vector+rerank` or `rerank-split-llm`; `default` means `vector+rerank`, or hybrid when `RERANKER_ENABLED=false`, or `rerank-split-llm` when `DECOMPOSITION_ENABLED=true`; asking by name for a mode that is not available gives a 400) and optional `filters` (`source_types`, `date_from`, `date_to`, `path_prefix`). The reply is a stream of events, always in this order: an optional `status` (`queued` while another answer is being written), then `sources` (the retrieved chunks numbered 1 to n in the order they are given to the model, which is the reranked order (merged from the sub-questions' lists in the split mode), with their full text, `rerank_rank` and `rerank_score`; both are `null` without reranking), then one `token` per piece of the answer, then `done` (full text, citation checks and timings). If something goes wrong you get a single short `error` event instead. Only one answer is generated at a time; extra requests wait their turn. From PowerShell, `curl.exe -N` shows the raw stream:
 
 ```powershell
 curl.exe -N -X POST http://127.0.0.1:8000/api/ask -H "Content-Type: application/json" --data-binary "@question.json"
@@ -259,7 +274,7 @@ Set these in `.env` or in the environment. All are optional except the database 
 | `ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Web addresses allowed to use the API from a browser. Exact addresses only; a `*` is refused. |
 | `MAX_UPLOAD_MB` | `25` | Largest file `/api/ingest` accepts |
 | `RERANKER_ENABLED` | `true` | Rerank search results with the cross-encoder; `false` for plain hybrid search |
-| `DECOMPOSITION_ENABLED` | `true` | Split questions that ask several things into sub-questions (needs the reranker) |
+| `DECOMPOSITION_ENABLED` | `false` | Make splitting a question into sub-questions the default search (opt-in; needs the reranker) |
 | `RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Which cross-encoder reranks |
 
 ### Security notes
