@@ -25,3 +25,8 @@ class RetrievedChunk:
     fused_score: float | None = None
     # Rank in each list that was fused, in the order the lists were given.
     list_ranks: tuple[int | None, ...] | None = None
+
+    # Set only when a reranker has reordered the results. rerank_score is the model's raw
+    # output (a logit, not a probability); when present it also becomes `score`.
+    rerank_score: float | None = None
+    rerank_rank: int | None = None
