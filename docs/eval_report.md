@@ -356,4 +356,53 @@ Only what the numbers support, on 30 development questions in the main table (8 
   setting, risks fitting this small set. The holdout is for one final check with a frozen configuration.
 - **Timing** comes from a single run on one machine and varies from run to run.
 
+## Phase 2 pre-registration
+
+Written and committed **before any Phase 2 configuration was run**. Nothing below may be changed after
+results are seen; anything learned later goes in a separate, labelled section.
+
+**Data.** Question set v2, development split only (the 13 holdout questions stay locked; `--confirm-holdout`
+is not used). No question, label, split or the question file is changed in Phase 2. Suspected label
+problems are listed under "Suspected label issues" and not fixed.
+
+**Reranker (fixed, not tuned).** `cross-encoder/ms-marco-MiniLM-L-6-v2` through sentence-transformers'
+CrossEncoder on CPU, `max_length` 512, input style `plain` (chunk text only), raw model output kept as
+the score (no sigmoid applied by the code). The Phase 2 plan also lists `BAAI/bge-reranker-base` and a
+`with_context` input style; they are **not run** here because this phase is limited to five
+configurations. The 30 best fused candidates per query go into the reranker. The runner keeps the
+reranked top 10 so that MRR@10 can be computed; hit@k for k up to 5 is read from the top of that list,
+which equals the reranked top 5.
+
+**Configurations (five, no more).**
+
+| id | configuration | what it is |
+|---|---|---|
+| A | hybrid | the current baseline: 30 vector + 30 Postgres full-text candidates, reciprocal rank fusion (k = 60) |
+| B | hybrid + reranker | A's top 30 fused candidates, reranked |
+| C | vector + reranker | the top 30 vector candidates, reranked |
+| D | hybrid, BM25 leg | as A, but the Postgres full-text leg is replaced by BM25 (`rank_bm25`, BM25Okapi, default k1 = 1.5, b = 0.75) over chunk text loaded from the database; the same filters apply; the Postgres full-text code stays in place |
+| E | D + reranker | D's top 30 fused candidates, reranked |
+
+**Decision rule.** Among A to E, take the best dev **MRR@10** in the main table (exact_term, paraphrase,
+multi_doc; n = 30). Every configuration whose MRR@10 is within 0.02 of the best is a tie, and among tied
+configurations the one with the lowest **median** retrieval time per question is chosen. If A is chosen,
+nothing changes.
+
+**What is reported.** For every configuration: the main table, by category, by difficulty bucket (with n),
+the missed-at-k list, and median and p95 time per question including the reranker (plus the reranker's
+size and load time on this CPU). Paired bootstrap differences against A for every configuration (hit@5,
+MRR@10, hit@1, doc_hit@5; 1000 resamples, seed 7).
+
+**Calibration (analysis only; no threshold goes into the app).** Top-1 score of each dev question for the
+selected configuration and for A, answerable versus unanswerable (9 unanswerable dev questions, so very
+thin), with a table of thresholds showing the share of unanswerable questions refused against the share
+of answerable questions wrongly refused. If the groups cannot be separated, that is stated.
+
+**Not done in this step.** Holdout run (only on request, once, for A and the selected configuration), the
+API/UI defaults, and Phase 3.
+
+## Suspected label issues
+
+None recorded yet.
+
 How the questions were written: (to be completed by the author)
