@@ -64,11 +64,11 @@ async def lifespan(app: FastAPI):
         logger.info("reranking is switched off; using plain hybrid search")
 
     # Question splitting uses the language model, so it needs no loading of its own; any failure of a
-    # single split falls back to searching with the whole question. It needs the reranker.
-    app.state.decomposer = None
-    if app.state.reranker is not None and app.state.settings.decomposition_enabled:
-        app.state.decomposer = make_decomposer()
-        logger.info("question splitting is on")
+    # single split falls back to searching with the whole question. It needs the reranker. It is always
+    # available by name (mode "rerank-split-llm"); DECOMPOSITION_ENABLED only makes it the default.
+    app.state.decomposer = make_decomposer() if app.state.reranker is not None else None
+    if app.state.decomposer is not None and app.state.settings.decomposition_enabled:
+        logger.info("question splitting is the default search")
 
     llm = OllamaLLM()
     app.state.llm = llm

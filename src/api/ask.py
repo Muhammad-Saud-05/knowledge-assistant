@@ -31,7 +31,7 @@ from ..llm.base import LLMError
 from ..retrieval.defaults import resolve_mode, retrieve
 from ..retrieval.models import RetrievedChunk
 from ..synthesis.answer import NOT_FOUND, Answer, build_prompt, finish_answer
-from .deps import get_decomposer, get_embedder, get_gate, get_llm, get_pool, get_reranker
+from .deps import get_decomposer, get_embedder, get_gate, get_llm, get_pool, get_reranker, get_settings
 from .observability import request_id_of
 from .schemas import AskRequest
 
@@ -78,9 +78,9 @@ def done_payload(answer: Answer, queue_wait: float) -> dict:
     }
 
 
-def _retrieve(pool, embedder, reranker, decomposer, body: AskRequest) -> list[RetrievedChunk]:
+def _retrieve(pool, embedder, reranker, decomposer, split_by_default, body: AskRequest) -> list[RetrievedChunk]:
     filters = body.filters.to_search_filters() if body.filters else None
-    mode = resolve_mode(body.mode, reranker is not None, decomposer is not None)
+    mode = resolve_mode(body.mode, reranker is not None, decomposer is not None, split_by_default)
     with pool.connection() as conn:
         return retrieve(conn, embedder, body.question, body.k, mode, filters, reranker, decomposer)
 
@@ -94,7 +94,8 @@ def _next_piece(iterator):
 
 
 async def ask_event_stream(
-    body: AskRequest, pool, embedder, llm, gate, request_id: str, reranker=None, decomposer=None
+    body: AskRequest, pool, embedder, llm, gate, request_id: str, reranker=None, decomposer=None,
+    split_by_default: bool = False,
 ) -> AsyncIterator[str]:
     queue_wait = 0.0
     if gate.locked():  # another answer is being generated: tell the client it is waiting
@@ -110,7 +111,7 @@ async def ask_event_stream(
         started = time.perf_counter()
 
         try:
-            chunks = await run_in_threadpool(_retrieve, pool, embedder, reranker, decomposer, body)
+            chunks = await run_in_threadpool(_retrieve, pool, embedder, reranker, decomposer, split_by_default, body)
         except Exception as error:  # noqa: BLE001
             logger.error("ask id=%s search failed type=%s", request_id, type(error).__name__)
             yield sse("error", {"message": SEARCH_FAILED})
@@ -179,13 +180,14 @@ async def ask(
     gate=Depends(get_gate),
     reranker=Depends(get_reranker),
     decomposer=Depends(get_decomposer),
+    settings=Depends(get_settings),
 ) -> StreamingResponse:
     """Answer a question from the stored documents, streamed as Server-Sent Events."""
     try:
         resolve_mode(body.mode, reranker is not None, decomposer is not None)
     except ValueError as error:  # for example the reranked mode while reranking is switched off
         raise HTTPException(status_code=400, detail=str(error)) from None
-    stream = ask_event_stream(body, pool, embedder, llm, gate, request_id_of(request), reranker, decomposer)
+    stream = ask_event_stream(body, pool, embedder, llm, gate, request_id_of(request), reranker, decomposer, settings.decomposition_enabled)
     return StreamingResponse(
         stream,
         media_type="text/event-stream",

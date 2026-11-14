@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         enabled = reranker_enabled()
         if args.mode:
-            resolve_mode(args.mode, enabled, enabled and decomposition_enabled())
+            resolve_mode(args.mode, enabled, enabled, decomposition_enabled())
     except ValueError as error:
         print(f"{error}", file=sys.stderr)
         return 2

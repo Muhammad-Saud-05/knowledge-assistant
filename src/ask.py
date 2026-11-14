@@ -136,9 +136,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--k", type=int, default=5, help="how many sources to retrieve (default 5)")
     parser.add_argument(
         "--mode", choices=SELECTABLE_MODES, default=None,
-        help="how to search (default: the question is split into sub-questions when it asks several things, "
-        "each is searched by vector and reranked, and the results are merged; vector+rerank when "
-        "DECOMPOSITION_ENABLED=false; hybrid when RERANKER_ENABLED=false)",
+        help="how to search (default: vector search reranked by the cross-encoder; hybrid when "
+        "RERANKER_ENABLED=false; rerank-split-llm splits a question that asks several things into "
+        "sub-questions first, and is the default only when DECOMPOSITION_ENABLED=true)",
     )
     parser.add_argument("--model", help="Ollama model name (default: OLLAMA_MODEL or llama3.2:3b)")
     parser.add_argument(
@@ -165,8 +165,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         reranking = reranker_enabled()
-        splitting = reranking and decomposition_enabled()
-        mode = resolve_mode(args.mode, reranking, splitting)
+        mode = resolve_mode(args.mode, reranking, reranking, decomposition_enabled())
     except ValueError as error:
         print(f"{error}", file=sys.stderr)
         return 2
