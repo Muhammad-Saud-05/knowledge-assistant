@@ -978,6 +978,86 @@ the other so that no question followed an identical prompt. The server's own ret
   variation caused by prompt length.
 - The sources appear in the `sources` event after about 0.8 s without the reranker and about 3.4 s with it.
 
+## Phase 2b pre-registration
+
+Written and committed **before any Phase 2b code was written or run**. Every decision in this phase is
+made on the **development split only**; the holdout has been run once (Phase 2) and is spent, so it is
+not run again. No question, label, split or the question file is changed. Retrieval-only evaluation on the
+dev main table (exact_term, paraphrase, multi_doc; n = 30, of which 8 multi_doc).
+
+### Part 1: question decomposition (retrieval only)
+
+**Configurations.**
+
+| id | configuration |
+|---|---|
+| C | the current default: vector top 30, rerank, top 5 (top 10 kept for MRR@10) |
+| R | rule-based split (below); a question that is not split is handled exactly as in C |
+| L | LLM split with `llama3.2:3b` (below); a question that is not split is handled exactly as in C |
+
+**R, the rule (fixed here, not tuned afterwards).** The question text is cut into parts at (a) a question
+mark that is followed by more text, (b) a semicolon, and (c) the word "and" when it is immediately followed
+by one of: how, what, which, why, when, where, who, can, could, should, do, does, is, are, will, would
+(case-insensitive). Each part is trimmed of spaces, commas, semicolons and a leading "and"; a part that
+lacks a final question mark gets one if the original question ended with one. Parts of fewer than 3 words
+are discarded. If fewer than 2 parts remain, the question is **not split**; if more than 3 remain, only the
+first 3 are used. No other rewriting is done, so a sub-question may lack context that was in the original.
+
+**L, the LLM split.** `llama3.2:3b` through Ollama, temperature 0, JSON output mode, the same 4096-token
+context window as the answer model. System prompt (exact text):
+
+> You split a user's question into standalone sub-questions. If the question asks for one thing, return it
+> unchanged as the only sub-question. If it asks for two or more different things, return at most 3
+> sub-questions, each of which can be understood on its own (repeat any names it needs). Reply with JSON
+> only, in the form {"sub_questions": ["...", "..."]}.
+
+The user message is the question. The reply is valid only if it is a JSON object whose `sub_questions` is a
+list of 1 to 3 non-empty strings of at most 300 characters each. **Any other reply, any parse failure and any
+error from the model falls back to the original question.** If exactly one sub-question is returned, the
+original question is used unchanged. The prompt is not changed after the first run.
+
+**Retrieval for R and L.** For each sub-question: vector top 30, reranked against that sub-question with the
+same reranker as C. The lists are merged **round-robin**: take the best chunk of the first list, then of the
+second, then of the third, and repeat, skipping a chunk already taken (de-duplicated by chunk id), until 10
+chunks are collected or the lists run out. Reranker scores are never compared across sub-questions. The
+first 5 of the merged list are the top 5. One run on the dev split for each of C, R and L.
+
+**Decision rule.** Adopt R or L only if **both**: (1) dev multi_doc coverage@5 is at least **0.15 higher**
+than C's, and (2) **no category's dev hit@5 falls by more than one question** below C's (categories:
+exact_term, paraphrase, multi_doc). If both R and L qualify, choose the one with the lower median time per
+question (the time includes the decomposition). If neither qualifies, C stays the default, nothing in the
+defaults changes, and the negative result is reported.
+
+**Reported.** The same tables as before (main table, by category, missed-at-k, paired differences against C
+for hit@5, MRR@10 and multi_doc coverage@5), the median decomposition time for L, and for each dev
+multi_doc question the sub-questions R and L produced.
+
+### Part 2: time to first token against context size
+
+**Settings** (all on configuration C's ranking, whatever Part 1 decides, so that only the amount of source
+text differs):
+
+| id | the sources put into the prompt |
+|---|---|
+| k3 | the top 3 chunks |
+| k4 | the top 4 chunks |
+| k5 | the top 5 chunks (the current default) |
+| B4500 | up to 5 chunks within a total of 4,500 characters of chunk text: starting from the top 5, drop the lowest-ranked chunk while the total exceeds 4,500 characters (at least one chunk is always kept) |
+
+**Retrieval quality of each setting** (dev main table, from the saved Phase 2 rankings of
+`vector+rerank`; no new search is needed because the setting only trims the ranked list; chunk lengths are
+read from the database by chunk id): hit@k and multi_doc coverage@k, with k = 3, 4, 5 and, for B4500, the
+number of chunks actually kept per question.
+
+**Time to first token.** The same 5 non-evaluation questions as in the earlier latency measurement, each
+asked once per setting, with the full pipeline (retrieval with reranking, prompt, `llama3.2:3b` through
+Ollama) run in one process on this machine, and the interval from the start of the question to the first
+generated piece timed. The settings run in blocks in the order k3, k4, k5, B4500, with the question order
+rotated by one between blocks and one uncounted warm-up question first, so no request follows one for the
+same question. The median over the 5 questions is reported, with the range and the prompt size. Five
+questions cannot separate small differences, and the report says so. **No default is changed and the
+budget is not added to the application code.**
+
 ## Suspected label issues
 
 Nothing was changed in the question file. Candidates noticed in Phase 2:
