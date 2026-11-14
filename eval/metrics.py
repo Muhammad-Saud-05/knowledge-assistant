@@ -1,15 +1,17 @@
 """Retrieval metrics. Pure functions: no database, no model.
 
-A retrieved chunk is RELEVANT to a question if it comes from an expected document AND its
-text contains at least one of that document's evidence phrases (compared after normalize()).
-That is a deliberately strict, mechanical judgement: it only credits the passages the author
-pointed at, so another passage that also answers the question counts as a miss.
+A retrieved chunk is RELEVANT to a question if it comes from an expected document (or, for a
+single-document question, an also_acceptable one) AND its text contains at least one of that
+document's evidence phrases (compared after normalize()). That is a deliberately strict,
+mechanical judgement: it only credits the passages the author pointed at or found by reading,
+so another passage that also answers the question may still count as a miss.
 """
 
 import math
 import random
 import re
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from .questions import Expected
@@ -63,18 +65,30 @@ def content_words(text: str) -> set[str]:
 
 # -------------------------------------------------------------- judging chunks
 
+Slots = Sequence[Sequence[Expected]]
 
-def judge_chunk(path: str, text: str, expected: tuple[Expected, ...] | list[Expected]) -> tuple[str | None, bool]:
-    """Returns (matched expected document or None, is the chunk from an expected document at all)."""
+
+def judge_chunk(path: str, text: str, slots: Slots) -> tuple[int | None, bool]:
+    """Judge one retrieved chunk against what the question needs.
+
+    `slots` is Question.slots: a multi-document question has one slot per expected document;
+    a single-document question has one slot holding its expected document and any
+    also_acceptable documents. A chunk fills a slot if it comes from one of the slot's documents
+    and contains one of THAT document's evidence phrases.
+
+    Returns (index of the slot the chunk fills, or None; whether the chunk comes from any
+    acceptable document at all).
+    """
     in_doc = False
     haystack = None
-    for item in expected:
-        if item.doc != path:
-            continue
-        in_doc = True
-        haystack = normalize(text) if haystack is None else haystack
-        if any(normalize(phrase) in haystack for phrase in item.evidence):
-            return item.doc, True
+    for index, slot in enumerate(slots):
+        for item in slot:
+            if item.doc != path:
+                continue
+            in_doc = True
+            haystack = normalize(text) if haystack is None else haystack
+            if any(normalize(phrase) in haystack for phrase in item.evidence):
+                return index, True
     return None, in_doc
 
 
@@ -86,19 +100,19 @@ MRR_DEPTH = 10
 
 @dataclass(frozen=True)
 class QuestionScore:
-    hit: dict[int, bool]  # k -> a relevant chunk in the top k (a multi-document question needs ALL its documents)
-    coverage: dict[int, float]  # k -> share of the expected documents with a relevant chunk in the top k
+    hit: dict[int, bool]  # k -> a relevant chunk in the top k (a multi-document question needs EVERY slot filled)
+    coverage: dict[int, float]  # k -> share of the slots filled by a relevant chunk in the top k
     mrr10: float
-    doc_hit5: bool  # any top-5 chunk from an expected document (the lenient measure)
+    doc_hit5: bool  # any top-5 chunk from an acceptable document (the lenient measure)
     first_relevant_rank: int | None  # 1-based, within the top 10
 
 
-def score_from_flags(matched: list[str | None], doc_ok: list[bool], n_expected_docs: int) -> QuestionScore:
-    """Score a ranked list given, for each rank, which expected document it matched (or None) and
-    whether it came from an expected document."""
-    if n_expected_docs < 1:
+def score_from_flags(matched: list[int | None], doc_ok: list[bool], n_slots: int) -> QuestionScore:
+    """Score a ranked list given, for each rank, which slot it filled (or None) and whether it
+    came from an acceptable document."""
+    if n_slots < 1:
         raise ValueError("an unanswerable question has no retrieval score")
-    coverage = {k: len({m for m in matched[:k] if m is not None}) / n_expected_docs for k in CUTOFFS}
+    coverage = {k: len({m for m in matched[:k] if m is not None}) / n_slots for k in CUTOFFS}
     hit = {k: coverage[k] >= 1.0 for k in CUTOFFS}
     first = next((i + 1 for i, m in enumerate(matched[:MRR_DEPTH]) if m is not None), None)
     return QuestionScore(
@@ -110,11 +124,10 @@ def score_from_flags(matched: list[str | None], doc_ok: list[bool], n_expected_d
     )
 
 
-def score_ranking(chunks: list[tuple[str, str]], expected: tuple[Expected, ...] | list[Expected]) -> QuestionScore:
+def score_ranking(chunks: list[tuple[str, str]], slots: Slots) -> QuestionScore:
     """Score a ranked list of (document path, chunk text) pairs."""
-    judged = [judge_chunk(path, text, expected) for path, text in chunks]
-    n_docs = len({e.doc for e in expected})
-    return score_from_flags([m for m, _ in judged], [d for _, d in judged], n_docs)
+    judged = [judge_chunk(path, text, slots) for path, text in chunks]
+    return score_from_flags([m for m, _ in judged], [d for _, d in judged], len(slots))
 
 
 # ----------------------------------------------------------------- aggregation
