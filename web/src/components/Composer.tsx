@@ -5,17 +5,18 @@ const MAX_QUESTION_LENGTH = 1000
 
 interface Props {
   busy: boolean
-  onSend: (question: string) => void
+  onSend: (question: string, compare: boolean) => void
   onStop: () => void
 }
 
 export default function Composer({ busy, onSend, onStop }: Props) {
   const [text, setText] = useState('')
+  const [compare, setCompare] = useState(false)
   const canSend = !busy && text.trim().length > 0
 
   function submit() {
     if (!canSend) return
-    onSend(text.trim())
+    onSend(text.trim(), compare)
     setText('')
   }
 
@@ -48,6 +49,10 @@ export default function Composer({ busy, onSend, onStop }: Props) {
         onChange={(event) => setText(event.target.value)}
         onKeyDown={onKeyDown}
       />
+      <label className="compare-option">
+        <input type="checkbox" checked={compare} onChange={(event) => setCompare(event.target.checked)} />
+        Compare across documents (slower)
+      </label>
       {busy ? (
         <button type="button" className="stop" onClick={onStop}>
           Stop

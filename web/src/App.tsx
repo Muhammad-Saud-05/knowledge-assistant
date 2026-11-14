@@ -22,12 +22,12 @@ export default function App() {
   // Leaving the page cancels any answer still being written.
   useEffect(() => () => controllerRef.current?.abort(), [])
 
-  async function run(id: number, question: string) {
+  async function run(id: number, question: string, compare: boolean) {
     const controller = new AbortController()
     controllerRef.current = controller
     try {
       await askQuestion(
-        { question },
+        compare ? { question, mode: 'rerank-split-llm' } : { question },
         {
           onStatus: (state) => dispatch({ type: 'status', id, state }),
           onSources: (sources) => dispatch({ type: 'sources', id, sources }),
@@ -47,10 +47,10 @@ export default function App() {
     }
   }
 
-  function send(question: string) {
+  function send(question: string, compare: boolean) {
     const id = nextId.current++
-    dispatch({ type: 'ask', id, question })
-    void run(id, question)
+    dispatch({ type: 'ask', id, question, compare })
+    void run(id, question, compare)
   }
 
   function stop() {
@@ -62,7 +62,7 @@ export default function App() {
     const turn = turns.find((t) => t.id === id)
     if (!turn || busy) return
     dispatch({ type: 'retry', id })
-    void run(id, turn.question)
+    void run(id, turn.question, turn.compare)
   }
 
   return (

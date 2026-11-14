@@ -35,6 +35,11 @@ function notices(turn: Turn): { kind: 'info' | 'warning'; text: string }[] {
   return found
 }
 
+export const SEARCHING_MESSAGE = 'Searching your documents...'
+export const COMPARING_MESSAGE = 'Splitting your question and searching your documents (this takes longer)...'
+export const READING_MESSAGE =
+  'Reading your sources - on this CPU the first words can take 30 to 40 seconds'
+
 export default function TurnView({ turn, canRetry, onRetry }: Props) {
   const waiting = turn.status === 'searching' || turn.status === 'queued'
   return (
@@ -45,7 +50,13 @@ export default function TurnView({ turn, canRetry, onRetry }: Props) {
         {waiting && (
           <p className="progress" role="status">
             <span className="spinner" aria-hidden="true" />
-            {turn.status === 'queued' ? 'Waiting in queue...' : 'Searching your documents...'}
+            {turn.status === 'queued'
+              ? 'Waiting in queue...'
+              : turn.sources.length > 0
+                ? READING_MESSAGE
+                : turn.compare
+                  ? COMPARING_MESSAGE
+                  : SEARCHING_MESSAGE}
           </p>
         )}
 

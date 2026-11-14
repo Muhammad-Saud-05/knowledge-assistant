@@ -16,6 +16,7 @@ export type TurnStatus =
 export interface Turn {
   id: number
   question: string
+  compare: boolean // asked with "Compare across documents" (the question is split and searched in parts)
   status: TurnStatus
   text: string
   sources: SourceItem[]
@@ -24,7 +25,7 @@ export interface Turn {
 }
 
 export type ChatAction =
-  | { type: 'ask'; id: number; question: string }
+  | { type: 'ask'; id: number; question: string; compare?: boolean }
   | { type: 'retry'; id: number }
   | { type: 'status'; id: number; state: string }
   | { type: 'sources'; id: number; sources: SourceItem[] }
@@ -42,8 +43,8 @@ export function isActive(turn: Turn): boolean {
   return ACTIVE.includes(turn.status)
 }
 
-function newTurn(id: number, question: string): Turn {
-  return { id, question, status: 'searching', text: '', sources: [], done: null, error: null }
+function newTurn(id: number, question: string, compare = false): Turn {
+  return { id, question, compare, status: 'searching', text: '', sources: [], done: null, error: null }
 }
 
 function update(turns: Turn[], id: number, change: (turn: Turn) => Turn): Turn[] {
@@ -53,9 +54,9 @@ function update(turns: Turn[], id: number, change: (turn: Turn) => Turn): Turn[]
 export function chatReducer(turns: Turn[], action: ChatAction): Turn[] {
   switch (action.type) {
     case 'ask':
-      return [...turns, newTurn(action.id, action.question)]
+      return [...turns, newTurn(action.id, action.question, action.compare ?? false)]
     case 'retry':
-      return update(turns, action.id, (turn) => newTurn(turn.id, turn.question))
+      return update(turns, action.id, (turn) => newTurn(turn.id, turn.question, turn.compare))
     default:
       break
   }

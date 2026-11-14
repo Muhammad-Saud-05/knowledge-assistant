@@ -1,7 +1,7 @@
 // The shapes of the data exchanged with the back end (see src/api/schemas.py and ask.py).
 
 export type SourceType = 'pdf' | 'markdown'
-export type SearchMode = 'vector' | 'keyword' | 'hybrid'
+export type SearchMode = 'default' | 'vector' | 'keyword' | 'hybrid' | 'vector+rerank' | 'rerank-split-llm'
 
 export interface Filters {
   source_types?: SourceType[]
@@ -27,6 +27,8 @@ export interface SourceItem {
   text: string
   vector_rank: number | null
   keyword_rank: number | null
+  rerank_rank?: number | null
+  rerank_score?: number | null
 }
 
 export interface Validation {

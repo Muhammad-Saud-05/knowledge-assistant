@@ -208,10 +208,12 @@ describe('the answer as it arrives', () => {
     expect(within(sources).getByText('Rate Limiting Notes')).toBeTruthy()
     expect(within(sources).getByText('Token bucket')).toBeTruthy()
     expect(within(sources).getByText('p. 5 - 4. Retrieval')).toBeTruthy()
-    expect(screen.getByText('Searching your documents...')).toBeTruthy() // no words of the answer yet
+    // the sources are already on screen; the status line now says what the wait is for
+    expect(screen.queryByText('Searching your documents...')).toBeNull()
+    expect(screen.getByText(/Reading your sources - on this CPU the first words can take 30 to 40 seconds/)).toBeTruthy()
 
     await server.pipe().send(sse('token', { text: 'A token ' }) + sse('token', { text: 'bucket refills' }))
-    expect(screen.queryByText('Searching your documents...')).toBeNull()
+    expect(screen.queryByText(/Reading your sources/)).toBeNull()
     expect(screen.getByText('A token bucket refills')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy()
 
@@ -260,7 +262,7 @@ describe('the answer as it arrives', () => {
 
     await server.pipe().send(sse('sources', SOURCES))
     expect(screen.queryByText('Waiting in queue...')).toBeNull()
-    expect(screen.getByText('Searching your documents...')).toBeTruthy()
+    expect(screen.getByText(/Reading your sources/)).toBeTruthy() // retrieval is over; the model is reading
     await server.pipe().end()
   })
 
@@ -271,6 +273,69 @@ describe('the answer as it arrives', () => {
     await server.pipe().send(sse('token', { text: 'Hello <img src=x onerror=alert(1)> <script>alert(2)</script>' }))
     expect(document.querySelector('img, script')).toBeNull()
     expect(document.body.textContent).toContain('<script>alert(2)</script>')
+    await server.pipe().end()
+  })
+})
+
+describe('compare across documents', () => {
+  const OPTION = 'Compare across documents (slower)'
+
+  it('has an option that is unchecked by default', () => {
+    render(<App />)
+    const option = screen.getByLabelText(OPTION) as HTMLInputElement
+    expect(option.type).toBe('checkbox')
+    expect(option.checked).toBe(false)
+  })
+
+  it('sends no search mode when the option is unchecked, so the server default is used', async () => {
+    nextStream()
+    render(<App />)
+    await ask('How does a token bucket work?')
+    expect(askCalls[0].body).toEqual({ question: 'How does a token bucket work?' })
+  })
+
+  it('sends the split-and-rerank mode when the option is checked', async () => {
+    nextStream()
+    render(<App />)
+    fireEvent.click(screen.getByLabelText(OPTION))
+    expect((screen.getByLabelText(OPTION) as HTMLInputElement).checked).toBe(true)
+    await ask('How does a token bucket work, and what is a fixed window?')
+    expect(askCalls[0].body).toEqual({
+      question: 'How does a token bucket work, and what is a fixed window?',
+      mode: 'rerank-split-llm',
+    })
+    expect(await screen.findByText(/Splitting your question and searching your documents/)).toBeTruthy()
+  })
+
+  it('asks again in the same way when a failed question is retried', async () => {
+    const server = nextStream()
+    render(<App />)
+    fireEvent.click(screen.getByLabelText(OPTION))
+    await ask('Two things at once?')
+    await server.pipe().send(sse('error', { message: 'Something went wrong.' }))
+    await server.pipe().end()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(askCalls).toHaveLength(2))
+    expect(askCalls[1].body).toEqual({ question: 'Two things at once?', mode: 'rerank-split-llm' })
+  })
+})
+
+describe('waiting for the first words', () => {
+  it('shows the sources as soon as they arrive and a status line about the wait', async () => {
+    const server = nextStream()
+    render(<App />)
+    await ask('How does a token bucket work?')
+    expect(await screen.findByText('Searching your documents...')).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Sources' })).toBeNull()
+
+    await server.pipe().send(sse('sources', SOURCES))
+    expect(within(screen.getByRole('region', { name: 'Sources' })).getAllByRole('listitem')).toHaveLength(2)
+    const status = screen.getByText(/Reading your sources/).closest('[role="status"]')
+    expect(status?.textContent).toBe('Reading your sources - on this CPU the first words can take 30 to 40 seconds')
+
+    await server.pipe().send(sse('token', { text: 'First words' }))
+    expect(screen.queryByText(/Reading your sources/)).toBeNull() // the wait is over
+    expect(screen.getByRole('region', { name: 'Sources' })).toBeTruthy() // the sources stay
     await server.pipe().end()
   })
 })

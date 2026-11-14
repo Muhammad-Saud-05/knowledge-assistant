@@ -33,6 +33,14 @@ describe('chatReducer', () => {
     expect(isActive(turn)).toBe(true)
   })
 
+  it('remembers whether the question was asked with the compare option, also after a retry', () => {
+    expect(run(ASK)[0].compare).toBe(false)
+    const asked = run({ ...ASK, compare: true })
+    expect(asked[0].compare).toBe(true)
+    const retried = run({ ...ASK, compare: true }, { type: 'error', id: 1, message: 'boom' }, { type: 'retry', id: 1 })
+    expect(retried[0]).toMatchObject({ compare: true, status: 'searching', error: null })
+  })
+
   it('shows the queue state and leaves it when retrieval starts', () => {
     const queued = run(ASK, { type: 'status', id: 1, state: 'queued' })
     expect(queued[0].status).toBe('queued')
