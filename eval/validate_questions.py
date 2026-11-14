@@ -23,13 +23,14 @@ from .metrics import content_words, normalize
 from .questions import (
     CATEGORIES,
     DIFFICULTIES,
-    EXPECTED_COUNTS,
     FILTER_FIELDS,
     ID_PATTERN,
     KNOWN_FIELDS,
     LOW_OVERLAP_MAX,
     MAX_EVIDENCE_WORDS,
     QUESTIONS_FILE,
+    V1_COUNTS,
+    V2_COUNTS,
     Question,
     difficulty_for,
     format_questions,
@@ -39,7 +40,9 @@ from .questions import (
 MAX_PARAPHRASE_OVERLAP = 1  # shared content words between a paraphrase question and its evidence
 HOLDOUT_SHARE = (0.15, 0.35)  # allowed share of holdout questions per category ("about 25%")
 MIN_DISTINCT_DOCS = 15
-MAX_QUESTIONS_PER_DOC = 3
+# v1 allowed 3 questions per document. v2 allows 4: the author's additions use fastapi-middleware.md
+# a fourth time (q54), and the 40 frozen questions were not touched to make room.
+MAX_QUESTIONS_PER_DOC = 4
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SINGLE_DOC_CATEGORIES = ("exact_term", "paraphrase", "filtered")
 
@@ -121,6 +124,8 @@ def _schema_errors(raw: object, position: int) -> list[str]:
         problem("lexical_overlap must be a number between 0 and 1")
     if "difficulty" in raw and raw["difficulty"] not in DIFFICULTIES:
         problem(f"difficulty must be one of {', '.join(DIFFICULTIES)}")
+    if "added_in" in raw and raw["added_in"] != "v2":
+        problem('added_in must be "v2" (v1 questions have no added_in field)')
     if "expected" in raw:
         errors += _entry_errors(raw["expected"], "expected", label)
     if "also_acceptable" in raw:
@@ -203,12 +208,20 @@ def validate(raw_items: list, corpus: Corpus, require_overlap: bool = True) -> l
     # ids, categories, duplicates
     ids = Counter(q.id for q in questions)
     errors += [f"duplicate id {i} ({n} times)" for i, n in ids.items() if n > 1]
+    # Counts. The frozen v1 questions (no added_in) must always match v1. If there are additions,
+    # the whole file must match v2; otherwise the whole file is v1.
+    v1_counts = Counter(q.category for q in questions if q.added_in == "v1")
+    for category, want in V1_COUNTS.items():
+        if v1_counts.get(category, 0) != want:
+            errors.append(f"v1 questions, category {category}: expected {want}, found {v1_counts.get(category, 0)}")
+    has_additions = any(q.added_in != "v1" for q in questions)
+    target, label = (V2_COUNTS, "v2") if has_additions else (V1_COUNTS, "v1")
     counts = Counter(q.category for q in questions)
-    for category, want in EXPECTED_COUNTS.items():
+    for category, want in target.items():
         if counts.get(category, 0) != want:
-            errors.append(f"category {category}: expected {want} questions, found {counts.get(category, 0)}")
-    if len(questions) != sum(EXPECTED_COUNTS.values()):
-        errors.append(f"expected {sum(EXPECTED_COUNTS.values())} questions in total, found {len(questions)}")
+            errors.append(f"category {category}: expected {want} questions for {label}, found {counts.get(category, 0)}")
+    if len(questions) != sum(target.values()):
+        errors.append(f"expected {sum(target.values())} questions in total for {label}, found {len(questions)}")
     seen: dict[str, str] = {}
     for q in questions:
         key = normalize(q.question)

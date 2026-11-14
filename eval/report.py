@@ -169,6 +169,31 @@ def main_tables(questions: list[Question], results: Results, modes: list[str]) -
     return first + "\n\n" + second
 
 
+def set_comparison_table(questions: list[Question], results: Results, modes: list[str]) -> str:
+    """hit@5 and MRR@10 for the frozen v1 questions next to the same measures on v2 (v1 plus the
+    later additions) and on the additions alone. Main-table questions only."""
+    qs = headline_questions(questions)
+    groups = [
+        ("v1", [q for q in qs if q.added_in == "v1"]),
+        ("v2 (v1 + additions)", qs),
+        ("additions only", [q for q in qs if q.added_in != "v1"]),
+    ]
+    rows = []
+    for mode in modes:
+        row = [mode]
+        for _, group in groups:
+            if not group:
+                row += ["-", "-"]
+                continue
+            agg = aggregate(_scores(group, results, mode))
+            row += [count_text(agg["hit5"], agg["n"]), f"{agg['mrr10']:.3f}"]
+        rows.append(row)
+    headers = ["mode"]
+    for label, group in groups:
+        headers += [f"{label} (n={len(group)}) hit@5", f"{label} MRR@10"]
+    return md_table(headers, rows)
+
+
 def category_table(questions: list[Question], results: Results, modes: list[str]) -> str:
     qs = headline_questions(questions)
     groups = [(c, [q for q in qs if q.category == c]) for c in HEADLINE_CATEGORIES]
@@ -316,6 +341,11 @@ def render_report(questions: list[Question], results: Results, modes: list[str],
     by_category = [(c, [q for q in headline if q.category == c]) for c in HEADLINE_CATEGORIES]
     sections = [
         f"## Main results (exact_term, paraphrase, multi_doc; n={len(headline)} questions)\n\n{main_tables(questions, results, modes)}",
+        *(
+            [f"## Question set v1 next to v2 (main-table questions)\n\n{set_comparison_table(questions, results, modes)}"]
+            if any(q.added_in != "v1" for q in questions)
+            else []
+        ),
         f"## By category\n\n{category_table(questions, results, modes)}",
         f"## By difficulty bucket (lexical overlap of the question with its best passage)\n\n{difficulty_table(questions, results, modes)}",
         f"## Paired differences (same questions resampled for both modes)\n\n{paired_table(questions, results, pairs)}\n\n"

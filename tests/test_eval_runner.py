@@ -7,6 +7,7 @@ from eval import run_eval
 from eval.questions import Expected, Question, format_questions
 from eval.report import (
     default_pairs,
+    set_comparison_table,
     difficulty_table,
     filtered_table,
     headline_questions,
@@ -293,3 +294,36 @@ def test_from_json_prints_the_tables_without_a_database(results, tmp_path, capsy
     assert run_eval.main(["--from-json", str(saved), "--questions", str(questions_file), "--split", "all", "--confirm-holdout"]) == 0
     out = capsys.readouterr().out
     assert "## Main results" in out and "## Paired differences" in out and "hybrid - vector" in out
+
+
+# ------------------------------------------------------------- v1 against v2
+
+
+def test_set_comparison_shows_v1_v2_and_the_additions_side_by_side(results):
+    from dataclasses import replace
+
+    marked = [replace(q, added_in="v2") if q.id == "q03" else q for q in QUESTIONS]  # q03 is an addition
+    text = set_comparison_table(marked, results, MODES)
+    rows = {line.split("|")[1].strip(): line for line in text.splitlines() if line.startswith(("| vector", "| keyword", "| hybrid"))}
+    # v1 = q01, q02 (hybrid hits both); v2 = q01..q03 (hybrid hits all three); additions only = q03
+    assert "v1 (n=2) hit@5" in text and "v2 (v1 + additions) (n=3) hit@5" in text and "additions only (n=1) hit@5" in text
+    assert "| 2/2 (100.0%) | 1.000 | 3/3 (100.0%) | 1.000 | 1/1 (100.0%) | 1.000 |" in rows["hybrid"]
+    # vector hits q01 and q02 within the top 5 but misses the multi-document q03
+    assert "| 2/2 (100.0%) | 0.667 | 2/3 (66.7%) | 0.778 | 0/1 (0.0%) | 1.000 |" in rows["vector"]
+
+
+def test_set_comparison_is_part_of_the_report_only_when_there_are_additions(results):
+    from dataclasses import replace
+
+    from eval.report import render_report
+
+    assert "Question set v1 next to v2" not in render_report(QUESTIONS, results, MODES)
+    marked = [replace(q, added_in="v2") if q.id == "q03" else q for q in QUESTIONS]
+    assert "Question set v1 next to v2" in render_report(marked, results, MODES)
+
+
+def test_result_filename_marks_v2_but_keeps_v1_names():
+    when = datetime(2026, 11, 14, 9, 30, 5, tzinfo=timezone.utc)
+    assert result_filename(["vector"], "dev", when) == "eval_20261114T093005Z_vector_dev.json"
+    assert result_filename(["vector"], "dev", when, "v1") == "eval_20261114T093005Z_vector_dev.json"
+    assert result_filename(["vector", "hybrid"], "dev", when, "v2") == "eval_20261114T093005Z_v2_vector-hybrid_dev.json"

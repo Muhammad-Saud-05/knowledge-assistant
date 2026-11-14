@@ -134,7 +134,7 @@ def test_duplicate_ids_and_wrong_counts(items, corpus):
     items.append(extra)
     found = problems(items, corpus)
     assert any("category exact_term: expected 10" in p for p in found)
-    assert any("in total, found 41" in p for p in found)
+    assert any("in total for v1, found 41" in p for p in found)
 
 
 def test_duplicate_question_text(items, corpus):
@@ -286,7 +286,7 @@ def test_too_many_questions_on_one_document(items, corpus):
     for q in items:
         if q["category"] == "paraphrase":
             q["expected"] = [entry(10)]
-    assert any("is used by" in p and "(max 3)" in p for p in problems(items, corpus))
+    assert any("is used by" in p and "(max 4)" in p for p in problems(items, corpus))
 
 
 def test_too_few_distinct_documents(items, corpus):
@@ -305,7 +305,7 @@ def test_too_few_distinct_documents(items, corpus):
         uses += count
     found = problems(items, corpus)
     assert any("only 14 different documents (want at least 15)" in p for p in found), found
-    assert not any("(max 3)" in p for p in found), found
+    assert not any("(max 4)" in p for p in found), found
 
 
 def test_a_sample_corpus_document_is_required(items, corpus):
@@ -387,3 +387,71 @@ def test_update_overlap_writes_the_fields_and_the_file_then_validates(items, cor
     assert all("lexical_overlap" not in q for q in written if q["category"] == "unanswerable")
     assert path.read_text(encoding="utf-8") == format_questions(written)  # stable layout
     assert update_overlap(written, corpus, path) == 0  # nothing left to change
+
+
+# ------------------------------------------------------------------ question set v2
+
+
+def add_v2(items, corpus):
+    """The valid v1 file plus 15 additions marked added_in v2 (6 paraphrase, 6 unanswerable, 3 multi_doc)."""
+    additions = []
+
+    def add(category, **fields):
+        qid = f"q{len(items) + len(additions) + 1:02d}"
+        n = len(additions)
+        item = {"id": qid, "category": category, "added_in": "v2", "question": f"Walrus addition number {n} about okapi{chr(97 + n)}?",
+                "expected": [], "holdout": False}
+        item.update(fields)
+        additions.append(item)
+
+    for i in range(6):
+        add("paraphrase", expected=[entry(10 + i)], holdout=(i == 3))
+    for i in range(6):
+        add("unanswerable", holdout=(i in (2, 5)))
+    for i in range(3):
+        add("multi_doc", expected=[entry(2 + i), entry(14 + i)], holdout=(i == 2))
+    return items + additions
+
+
+def test_a_valid_v2_file_has_no_problems(items, corpus):
+    v2 = add_v2(items, corpus)
+    assert len(v2) == 55
+    assert problems(v2, corpus) == []
+
+
+def test_v2_counts_are_enforced_for_the_whole_file(items, corpus):
+    v2 = add_v2(items, corpus)
+    v2.pop()  # drop one multi_doc addition
+    found = problems(v2, corpus)
+    assert any("category multi_doc: expected 11 questions for v2, found 10" in p for p in found)
+    assert any("expected 55 questions in total for v2, found 54" in p for p in found)
+
+
+def test_the_frozen_v1_questions_must_keep_their_v1_counts(items, corpus):
+    v2 = add_v2(items, corpus)
+    removed = next(q for q in v2 if q["category"] == "exact_term")
+    v2.remove(removed)  # a v1 question disappears (and the totals shift)
+    found = problems(v2, corpus)
+    assert any("v1 questions, category exact_term: expected 10, found 9" in p for p in found)
+
+
+def test_added_in_must_be_v2(items, corpus):
+    items[0]["added_in"] = "v1"
+    assert any('added_in must be "v2"' in p for p in problems(items, corpus))
+
+
+def test_a_document_may_be_used_by_four_questions_but_not_five(items, corpus):
+    # the file already uses doc20 once (q21): three more makes four, one more makes five
+    for qid in ("q11", "q12", "q13"):
+        find(items, qid)["expected"] = [entry(20)]
+    assert not any("is used by" in p for p in problems(items, corpus))
+    find(items, "q14")["expected"] = [entry(20)]
+    assert any("doc20.md is used by 5 questions (max 4)" in p for p in problems(items, corpus))
+
+
+def test_v2_holdout_shares_are_checked_over_the_whole_file(items, corpus):
+    v2 = add_v2(items, corpus)
+    for q in v2:
+        if q["category"] == "unanswerable":
+            q["holdout"] = False
+    assert any("category unanswerable: 0/12 holdout" in p for p in problems(v2, corpus))

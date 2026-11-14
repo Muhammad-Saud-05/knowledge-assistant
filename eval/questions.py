@@ -8,19 +8,24 @@ from pathlib import Path
 QUESTIONS_FILE = Path(__file__).with_name("questions.json")
 
 CATEGORIES = ("exact_term", "paraphrase", "multi_doc", "unanswerable", "filtered")
-EXPECTED_COUNTS = {"exact_term": 10, "paraphrase": 12, "multi_doc": 8, "unanswerable": 6, "filtered": 4}
+# Question set v1 (40 questions) was frozen before the first baseline was run. Set v2 is v1 plus the
+# questions marked "added_in": "v2", which the author wrote after reading the v1 baseline.
+V1_COUNTS = {"exact_term": 10, "paraphrase": 12, "multi_doc": 8, "unanswerable": 6, "filtered": 4}
+V2_COUNTS = {"exact_term": 10, "paraphrase": 18, "multi_doc": 11, "unanswerable": 12, "filtered": 4}
+EXPECTED_COUNTS = V1_COUNTS  # kept for older callers; the validator uses V1_COUNTS and V2_COUNTS
+SETS = ("v1", "v2")
 FILTER_FIELDS = ("source_types", "date_from", "date_to", "path_prefix")
 ID_PATTERN = re.compile(r"^q\d{2}$")
 MAX_EVIDENCE_WORDS = 10
 LOW_OVERLAP_MAX = 0.25  # a question whose overlap is at most this is "low_overlap"; above it, "high_overlap"
 DIFFICULTIES = ("low_overlap", "high_overlap")
 KNOWN_FIELDS = {
-    "id", "category", "question", "filters", "expected", "also_acceptable",
+    "id", "category", "added_in", "question", "filters", "expected", "also_acceptable",
     "headline", "holdout", "lexical_overlap", "difficulty", "notes",
 }
 # Order in which fields are written to the question file.
 FIELD_ORDER = (
-    "id", "category", "question", "filters", "expected", "also_acceptable",
+    "id", "category", "added_in", "question", "filters", "expected", "also_acceptable",
     "headline", "holdout", "lexical_overlap", "difficulty", "notes",
 )
 
@@ -48,6 +53,8 @@ class Question:
     headline: bool = True
     lexical_overlap: float | None = None
     difficulty: str | None = None
+    # "v1" for the frozen original questions (the field is absent in the file), "v2" for additions.
+    added_in: str = "v1"
 
     @property
     def answerable(self) -> bool:
@@ -101,6 +108,7 @@ def parse_question(raw: dict) -> Question:
         headline=raw.get("headline", True),
         lexical_overlap=raw.get("lexical_overlap"),
         difficulty=raw.get("difficulty"),
+        added_in=raw.get("added_in", "v1"),
     )
 
 
@@ -120,6 +128,15 @@ def select_split(questions: list[Question], split: str) -> list[Question]:
     if split == "holdout":
         return [q for q in questions if q.holdout]
     raise ValueError(f"unknown split {split!r}; use all, dev or holdout")
+
+
+def select_set(questions: list[Question], question_set: str) -> list[Question]:
+    """'v1' = the frozen original questions, 'v2' = v1 plus the later additions."""
+    if question_set == "v1":
+        return [q for q in questions if q.added_in == "v1"]
+    if question_set == "v2":
+        return list(questions)
+    raise ValueError(f"unknown question set {question_set!r}; use v1 or v2")
 
 
 def difficulty_for(overlap: float) -> str:

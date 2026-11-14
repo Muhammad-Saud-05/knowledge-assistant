@@ -21,7 +21,7 @@ from time import perf_counter
 from src.retrieval.models import RetrievedChunk
 
 from .metrics import judge_chunk
-from .questions import QUESTIONS_FILE, Question, load_questions, select_split
+from .questions import QUESTIONS_FILE, Question, load_questions, select_set, select_split
 from .report import QuestionRun, RankEntry, Results, render_report, results_from_json, results_to_json
 from .validate_questions import Corpus, doc_passes_filters, load_corpus, to_search_filters
 
@@ -113,16 +113,20 @@ def _git_commit() -> str | None:
         return None
 
 
-def result_filename(modes: list[str], split: str, when: datetime) -> str:
+def result_filename(modes: list[str], split: str, when: datetime, question_set: str = "v1") -> str:
+    """Result files for the original question set keep their original names; v2 files say so."""
     stamp = when.strftime("%Y%m%dT%H%M%SZ")
     label = "-".join(m.replace("+", "_") for m in modes)
-    return f"eval_{stamp}_{label}_{split}.json"
+    tag = "" if question_set == "v1" else f"_{question_set}"
+    return f"eval_{stamp}{tag}_{label}_{split}.json"
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate retrieval on the question set.")
     parser.add_argument("--modes", default="vector,keyword,hybrid", help="comma-separated: vector, keyword, hybrid")
     parser.add_argument("--split", choices=("all", "dev", "holdout"), default="dev", help="which questions (default dev)")
+    parser.add_argument("--set", dest="question_set", choices=("v1", "v2"), default="v2",
+                        help="v1 = the frozen original 40 questions, v2 = v1 plus the later additions (default v2)")
     parser.add_argument("--confirm-holdout", action="store_true", help="allow the holdout split (final check only)")
     parser.add_argument("--k", type=int, default=5, help="cutoff for the win/loss and missed-question lists (default 5)")
     parser.add_argument("--candidates", type=int, default=30, help="candidates per method for hybrid (default 30)")
@@ -137,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         modes = parse_modes(args.modes)
         check_split_allowed(args.split, args.confirm_holdout)
-        questions = select_split(load_questions(args.questions), args.split)
+        questions = select_split(select_set(load_questions(args.questions), args.question_set), args.split)
 
         if args.from_json:
             data = json.loads(args.from_json.read_text(encoding="utf-8"))
@@ -171,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
     meta = {
         "created_utc": now.isoformat(timespec="seconds"),
         "split": args.split,
+        "question_set": args.question_set,
         "modes": modes,
         "k": args.k,
         "candidates": args.candidates,
@@ -184,7 +189,7 @@ def main(argv: list[str] | None = None) -> int:
         "note": "ranked chunk ids and scores only; no chunk text",
     }
     args.out.mkdir(parents=True, exist_ok=True)
-    out_path = args.out / result_filename(modes, args.split, now)
+    out_path = args.out / result_filename(modes, args.split, now, args.question_set)
     out_path.write_text(json.dumps(results_to_json(questions, results, meta), indent=1), encoding="utf-8")
 
     header = (

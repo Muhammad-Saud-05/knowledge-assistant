@@ -18,6 +18,7 @@ from eval.questions import (
     difficulty_for,
     format_questions,
     parse_question,
+    select_set,
     select_split,
 )
 
@@ -299,3 +300,22 @@ def test_format_questions_round_trips_and_keeps_the_field_order():
 def test_format_questions_rejects_unknown_fields():
     with pytest.raises(ValueError):
         format_questions([raw_question(surprise=1)])
+
+
+def test_added_in_defaults_to_v1_and_is_read_when_present():
+    assert parse_question(raw_question()).added_in == "v1"
+    assert parse_question(raw_question(added_in="v2")).added_in == "v2"
+
+
+def test_select_set_keeps_v1_questions_only_or_everything():
+    questions = [parse_question(raw_question(id="q01")), parse_question(raw_question(id="q02", added_in="v2"))]
+    assert [q.id for q in select_set(questions, "v1")] == ["q01"]
+    assert [q.id for q in select_set(questions, "v2")] == ["q01", "q02"]
+    with pytest.raises(ValueError):
+        select_set(questions, "v3")
+
+
+def test_format_questions_writes_added_in_right_after_the_category():
+    text = format_questions([raw_question(added_in="v2")])
+    keys = [line.split('"')[1] for line in text.splitlines() if line.startswith('    "')]
+    assert keys[:4] == ["id", "category", "added_in", "question"]
