@@ -422,5 +422,167 @@
     "lexical_overlap": 0.29,
     "difficulty": "high_overlap",
     "notes": "Date-range filter: only the git cheatsheet (front-matter date 2026-10-02) falls in October 2026. Dates: the author's own notes carry front-matter dates; the third-party documents carry their file's modified date (2026-11-14). Rewritten from a generic wording whose words all appeared in this tiny document."
+  },
+  {
+    "id": "q41",
+    "category": "paraphrase",
+    "added_in": "v2",
+    "question": "My database driver blocks and can't be waited on. Which kind of function should I write for the endpoint?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-async.md", "evidence": ["doesn't have support for using `await`"]}],
+    "holdout": false,
+    "lexical_overlap": 0.12,
+    "difficulty": "low_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. The passage says libraries without await support (most database libraries) need a plain def function."
+  },
+  {
+    "id": "q42",
+    "category": "paraphrase",
+    "added_in": "v2",
+    "question": "Why would my custom error handler miss errors raised from inside framework add-ons?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-handling-errors.md", "evidence": ["or a Starlette extension or plug-in, raises a Starlette `HTTPException`"]}],
+    "holdout": false,
+    "lexical_overlap": 0.25,
+    "difficulty": "low_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. The passage says to register the handler for Starlette's HTTPException so extension errors are caught."
+  },
+  {
+    "id": "q43",
+    "category": "paraphrase",
+    "added_in": "v2",
+    "question": "How should I split a cloud network so that only the front machine can be reached from the internet?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-scaling-aws.md", "evidence": ["Create a public subnet for the single **Web Server**"]}],
+    "holdout": false,
+    "lexical_overlap": 0.29,
+    "difficulty": "high_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Public subnet for the single web server, private subnet for everything else."
+  },
+  {
+    "id": "q44",
+    "category": "paraphrase",
+    "added_in": "v2",
+    "question": "How would the budgeting app work out the type of spending when a merchant isn't in its list?",
+    "expected": [{"doc": "data/corpus/docs/sdp-solution-mint.md", "evidence": ["For sellers not initially seeded in the map"]}],
+    "holdout": true,
+    "lexical_overlap": 0.0,
+    "difficulty": "low_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Crowdsourced category overrides for sellers that are not in the seeded dictionary."
+  },
+  {
+    "id": "q45",
+    "category": "paraphrase",
+    "added_in": "v2",
+    "question": "Why do people give up on flashcard apps after a few weeks?",
+    "expected": [{"doc": "sample_corpus/study-habits-notes.md", "evidence": ["many new items at once is the usual failure"]}],
+    "holdout": false,
+    "lexical_overlap": 0.2,
+    "difficulty": "low_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Too many new cards a day makes the review pile overwhelming."
+  },
+  {
+    "id": "q46",
+    "category": "paraphrase",
+    "added_in": "v2",
+    "question": "How can I serve one set of endpoints under both a versioned URL and a \"latest\" URL?",
+    "expected": [{"doc": "data/corpus/docs/fastapi-bigger-applications.md", "evidence": ["multiple times with the same router using different prefixes"]}],
+    "holdout": false,
+    "lexical_overlap": 0.25,
+    "difficulty": "low_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Including the same router twice with different prefixes (the document's example is /api/v1 and /api/latest)."
+  },
+  {
+    "id": "q47",
+    "category": "unanswerable",
+    "added_in": "v2",
+    "question": "How do I enable HTTP/3 in FastAPI?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. No text search hit for HTTP/3, QUIC or h3."
+  },
+  {
+    "id": "q48",
+    "category": "unanswerable",
+    "added_in": "v2",
+    "question": "How do I run Ollama on a Raspberry Pi?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Near miss: the only Raspberry Pi mention is in the FastAPI Docker PDF (building your own image), not about Ollama; the Ollama documents mention only macOS arm64 and Jetson backends."
+  },
+  {
+    "id": "q49",
+    "category": "unanswerable",
+    "added_in": "v2",
+    "question": "How do I run database migrations with Alembic in a FastAPI project?",
+    "expected": [],
+    "holdout": true,
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. No hit for Alembic; two generic remarks that one might run database migrations as a start-up step."
+  },
+  {
+    "id": "q50",
+    "category": "unanswerable",
+    "added_in": "v2",
+    "question": "How do I back up and restore a pgvector database?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. No hit for pg_dump, pg_restore or backup in the pgvector document; other hits are git restore and an Ollama model-copy example."
+  },
+  {
+    "id": "q51",
+    "category": "unanswerable",
+    "added_in": "v2",
+    "question": "How do I deploy a FastAPI app to AWS Lambda?",
+    "expected": [],
+    "holdout": false,
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Only a scaling diagram mentioning a worker on EC2 or Lambda and a generic API gateway remark; nothing on deploying FastAPI."
+  },
+  {
+    "id": "q52",
+    "category": "unanswerable",
+    "added_in": "v2",
+    "question": "Which Python version do I need to build Ollama from source?",
+    "expected": [],
+    "holdout": true,
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Borderline: the Ollama build prerequisites list Go, CMake 3.24 or newer and a C/C++ compiler, with no Python, so no Python version can be found; a reader could also answer that none is listed."
+  },
+  {
+    "id": "q53",
+    "category": "multi_doc",
+    "added_in": "v2",
+    "question": "From a FastAPI endpoint I want to call Ollama's chat REST endpoint using a library that can't be awaited. Which URL do I send the request to, and how should I declare my endpoint function?",
+    "expected": [
+      {"doc": "data/corpus/docs/ollama-readme.md", "evidence": ["curl http://localhost:11434/api/chat"]},
+      {"doc": "data/corpus/docs/fastapi-async.md", "evidence": ["declare your path operation functions as normally, with just `def`"]}
+    ],
+    "holdout": false,
+    "lexical_overlap": 0.31,
+    "difficulty": "high_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Ollama README: the chat URL. FastAPI async page: use a plain def function. Shares its async passage with q41."
+  },
+  {
+    "id": "q54",
+    "category": "multi_doc",
+    "added_in": "v2",
+    "question": "If a client sends too many requests, which status code and header should my API return, and how can I run that check on every request in FastAPI?",
+    "expected": [
+      {"doc": "sample_corpus/rate-limiting-notes.md", "evidence": ["return HTTP status 429 (Too Many Requests)"]},
+      {"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["use the decorator `@app.middleware(\"http\")` on top of a function"]}
+    ],
+    "holdout": false,
+    "lexical_overlap": 0.5,
+    "difficulty": "high_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Rate limiting notes: 429 and Retry-After. Middleware page: a function that runs on every request. Shares its 429 passage with q09."
+  },
+  {
+    "id": "q55",
+    "category": "multi_doc",
+    "added_in": "v2",
+    "question": "How can I write a test that confirms my FastAPI endpoint answers a missing item with the proper error code and message, and what do I need to install first?",
+    "expected": [
+      {"doc": "data/corpus/docs/fastapi-testing.md", "evidence": ["To use `TestClient`, first install"]},
+      {"doc": "data/corpus/docs/fastapi-handling-errors.md", "evidence": ["that client will receive an HTTP status code of 404"]}
+    ],
+    "holdout": true,
+    "lexical_overlap": 0.33,
+    "difficulty": "high_overlap",
+    "notes": "Added in v2 by the author after the v1 baseline had been read; wording exactly as given. Testing page: what to install and how to use the test client. Error handling page: the 404 and its detail message. Caveat: the testing page's stored text does not itself show a 404 assertion."
   }
 ]
