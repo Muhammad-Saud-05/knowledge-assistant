@@ -242,7 +242,13 @@ def main(argv: list[str] | None = None) -> int:
         f"Hybrid candidates per method: {args.candidates}. Top {DEPTH} judged per question.\n"
         f"Questions file {args.questions.name} (sha256 {meta['questions_sha256'][:12]}), commit {meta['git_commit']}.\n"
     )
-    report = render_report(questions, results, modes, args.k)
+    if reranker_info:
+        header += (
+            f"Reranker {reranker_info['model']} (input {reranker_info['input_style']}, "
+            f"{reranker_info['parameters_millions']} M parameters, about {reranker_info['float32_mb']} MB as float32), "
+            f"loaded on CPU in {reranker_info['load_seconds']} s. Rerank candidates: {args.rerank_candidates}.\n"
+        )
+    report = render_report(questions, results, modes, args.k, baseline=args.baseline)
     print(header + "\n" + report)
     print(f"Saved: {out_path}")
     if args.markdown:

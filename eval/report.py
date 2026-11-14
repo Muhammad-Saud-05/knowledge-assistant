@@ -367,7 +367,7 @@ def render_report(
         ),
         f"## By category\n\n{category_table(questions, results, modes)}",
         f"## By difficulty bucket (lexical overlap of the question with its best passage)\n\n{difficulty_table(questions, results, modes)}",
-        f"## Paired differences (same questions resampled for both modes)\n\n{paired_table(questions, results, pairs)}\n\n"
+        f"## Paired differences (same questions resampled for both modes)\n\n{paired_table(questions, results, pairs, extended=extended)}\n\n"
         f"### Paired differences by category\n\n{paired_table(questions, results, pairs, groups=by_category, extended=extended)}\n\n"
         f"### Paired differences by difficulty bucket\n\n{paired_table(questions, results, pairs, groups=by_difficulty, extended=extended)}",
         f"## Wins and losses per question\n\n{win_loss_lists(questions, results, pairs, k)}",
