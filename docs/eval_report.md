@@ -1058,6 +1058,374 @@ same question. The median over the 5 questions is reported, with the range and t
 questions cannot separate small differences, and the report says so. **No default is changed and the
 budget is not added to the application code.**
 
+## Phase 2b results: question decomposition (development split)
+
+Run: `python -m eval.run_eval --modes vector+rerank,rerank-split-rule,rerank-split-llm --baseline vector+rerank
+--split dev --set v2`, code at commit `4ab13f8`, once. Result file:
+`eval/results/eval_20261114T100208Z_v2_vector_rerank-rerank-split-rule-rerank-split-llm_dev.json`.
+C = `vector+rerank`, R = `rerank-split-rule`, L = `rerank-split-llm`. Dev only; the holdout was not used.
+
+### Main results (exact_term, paraphrase, multi_doc; n=30 questions)
+
+| mode | hit@1 | hit@3 | hit@5 | MRR@10 | doc_hit@5 | multi_doc coverage@5 |
+|---|---|---|---|---|---|---|
+| vector+rerank | 12/30 (40.0%) | 17/30 (56.7%) | 21/30 (70.0%) | 0.693 | 29/30 (96.7%) | 0.75 (n=8) |
+| rerank-split-rule | 12/30 (40.0%) | 19/30 (63.3%) | 21/30 (70.0%) | 0.682 | 29/30 (96.7%) | 0.81 (n=8) |
+| rerank-split-llm | 10/30 (33.3%) | 19/30 (63.3%) | 23/30 (76.7%) | 0.632 | 28/30 (93.3%) | 0.94 (n=8) |
+
+| mode | hit@5 95% CI | MRR@10 95% CI | median ms/question | p95 ms/question |
+|---|---|---|---|---|
+| vector+rerank | [0.53, 0.87] | [0.55, 0.84] | 2660 | 3320 |
+| rerank-split-rule | [0.53, 0.87] | [0.53, 0.83] | 2671 | 6471 |
+| rerank-split-llm | [0.60, 0.90] | [0.50, 0.77] | 12478 | 18731 |
+
+### Question set v1 next to v2 (main-table questions)
+
+| mode | v1 (n=23) hit@5 | v1 MRR@10 | v2 (v1 + additions) (n=30) hit@5 | v2 (v1 + additions) MRR@10 | additions only (n=7) hit@5 | additions only MRR@10 |
+|---|---|---|---|---|---|---|
+| vector+rerank | 16/23 (69.6%) | 0.697 | 21/30 (70.0%) | 0.693 | 5/7 (71.4%) | 0.679 |
+| rerank-split-rule | 18/23 (78.3%) | 0.693 | 21/30 (70.0%) | 0.682 | 3/7 (42.9%) | 0.643 |
+| rerank-split-llm | 20/23 (87.0%) | 0.671 | 23/30 (76.7%) | 0.632 | 3/7 (42.9%) | 0.503 |
+
+### By category
+
+| group | n | mode | hit@1 | hit@3 | hit@5 | MRR@10 | doc_hit@5 |
+|---|---|---|---|---|---|---|---|
+| exact_term | n=8 | vector+rerank | 6/8 (75.0%) | 7/8 (87.5%) | 7/8 (87.5%) | 0.792 | 8/8 (100.0%) |
+| exact_term | n=8 | rerank-split-rule | 6/8 (75.0%) | 7/8 (87.5%) | 7/8 (87.5%) | 0.792 | 8/8 (100.0%) |
+| exact_term | n=8 | rerank-split-llm | 6/8 (75.0%) | 7/8 (87.5%) | 7/8 (87.5%) | 0.792 | 8/8 (100.0%) |
+| paraphrase | n=14 | vector+rerank | 6/14 (42.9%) | 8/14 (57.1%) | 10/14 (71.4%) | 0.544 | 13/14 (92.9%) |
+| paraphrase | n=14 | rerank-split-rule | 6/14 (42.9%) | 8/14 (57.1%) | 9/14 (64.3%) | 0.526 | 13/14 (92.9%) |
+| paraphrase | n=14 | rerank-split-llm | 4/14 (28.6%) | 7/14 (50.0%) | 9/14 (64.3%) | 0.455 | 12/14 (85.7%) |
+| multi_doc | n=8 | vector+rerank | 0/8 (0.0%) | 2/8 (25.0%) | 4/8 (50.0%) | 0.854 | 8/8 (100.0%) |
+| multi_doc | n=8 | rerank-split-rule | 0/8 (0.0%) | 4/8 (50.0%) | 5/8 (62.5%) | 0.844 | 8/8 (100.0%) |
+| multi_doc | n=8 | rerank-split-llm | 0/8 (0.0%) | 5/8 (62.5%) | 7/8 (87.5%) | 0.781 | 8/8 (100.0%) |
+
+### By difficulty bucket (lexical overlap of the question with its best passage)
+
+| group | n | mode | hit@1 | hit@3 | hit@5 | MRR@10 | doc_hit@5 |
+|---|---|---|---|---|---|---|---|
+| low_overlap | n=10 | vector+rerank | 3/10 (30.0%) | 5/10 (50.0%) | 6/10 (60.0%) | 0.475 | 9/10 (90.0%) |
+| low_overlap | n=10 | rerank-split-rule | 3/10 (30.0%) | 5/10 (50.0%) | 6/10 (60.0%) | 0.442 | 9/10 (90.0%) |
+| low_overlap | n=10 | rerank-split-llm | 1/10 (10.0%) | 3/10 (30.0%) | 6/10 (60.0%) | 0.302 | 9/10 (90.0%) |
+| high_overlap | n=20 | vector+rerank | 9/20 (45.0%) | 12/20 (60.0%) | 15/20 (75.0%) | 0.802 | 20/20 (100.0%) |
+| high_overlap | n=20 | rerank-split-rule | 9/20 (45.0%) | 14/20 (70.0%) | 15/20 (75.0%) | 0.802 | 20/20 (100.0%) |
+| high_overlap | n=20 | rerank-split-llm | 9/20 (45.0%) | 16/20 (80.0%) | 17/20 (85.0%) | 0.797 | 19/20 (95.0%) |
+
+### Paired differences (same questions resampled for both modes)
+
+| comparison | questions | n | metric | mean difference | paired 95% CI | questions | interval excludes 0? |
+|---|---|---|---|---|---|---|---|
+| rerank-split-rule - vector+rerank | all headline | n=30 | hit@5 | +0.000 | [-0.13, 0.13] | 2 better / 2 worse / 26 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | MRR@10 | -0.011 | [-0.06, 0.04] | 1 better / 3 worse / 26 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 30 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 30 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | hit@5 | +0.067 | [-0.10, 0.23] | 4 better / 2 worse / 24 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | MRR@10 | -0.061 | [-0.15, 0.03] | 4 better / 8 worse / 18 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | hit@1 | -0.067 | [-0.17, 0.00] | 0 better / 2 worse / 28 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | doc_hit@5 | -0.033 | [-0.10, 0.00] | 0 better / 1 worse / 29 same | not clear |
+
+#### Paired differences by category
+
+| comparison | questions | n | metric | mean difference | paired 95% CI | questions | interval excludes 0? |
+|---|---|---|---|---|---|---|---|
+| rerank-split-rule - vector+rerank | all headline | n=30 | hit@5 | +0.000 | [-0.13, 0.13] | 2 better / 2 worse / 26 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | MRR@10 | -0.011 | [-0.06, 0.04] | 1 better / 3 worse / 26 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 30 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 30 same | not clear |
+| rerank-split-rule - vector+rerank | exact_term | n=8 | hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | exact_term | n=8 | MRR@10 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | exact_term | n=8 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | exact_term | n=8 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | paraphrase | n=14 | hit@5 | -0.071 | [-0.21, 0.00] | 0 better / 1 worse / 13 same | not clear |
+| rerank-split-rule - vector+rerank | paraphrase | n=14 | MRR@10 | -0.018 | [-0.05, 0.00] | 0 better / 1 worse / 13 same | not clear |
+| rerank-split-rule - vector+rerank | paraphrase | n=14 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 14 same | not clear |
+| rerank-split-rule - vector+rerank | paraphrase | n=14 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 14 same | not clear |
+| rerank-split-rule - vector+rerank | multi_doc | n=8 | hit@5 | +0.125 | [-0.25, 0.50] | 2 better / 1 worse / 5 same | not clear |
+| rerank-split-rule - vector+rerank | multi_doc | n=8 | MRR@10 | -0.010 | [-0.20, 0.18] | 1 better / 2 worse / 5 same | not clear |
+| rerank-split-rule - vector+rerank | multi_doc | n=8 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | multi_doc | n=8 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | hit@5 | +0.067 | [-0.10, 0.23] | 4 better / 2 worse / 24 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | MRR@10 | -0.061 | [-0.15, 0.03] | 4 better / 8 worse / 18 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | hit@1 | -0.067 | [-0.17, 0.00] | 0 better / 2 worse / 28 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | doc_hit@5 | -0.033 | [-0.10, 0.00] | 0 better / 1 worse / 29 same | not clear |
+| rerank-split-llm - vector+rerank | exact_term | n=8 | hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | exact_term | n=8 | MRR@10 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | exact_term | n=8 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | exact_term | n=8 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | paraphrase | n=14 | hit@5 | -0.071 | [-0.29, 0.14] | 1 better / 2 worse / 11 same | not clear |
+| rerank-split-llm - vector+rerank | paraphrase | n=14 | MRR@10 | -0.089 | [-0.25, 0.06] | 3 better / 5 worse / 6 same | not clear |
+| rerank-split-llm - vector+rerank | paraphrase | n=14 | hit@1 | -0.143 | [-0.36, 0.00] | 0 better / 2 worse / 12 same | not clear |
+| rerank-split-llm - vector+rerank | paraphrase | n=14 | doc_hit@5 | -0.071 | [-0.21, 0.00] | 0 better / 1 worse / 13 same | not clear |
+| rerank-split-llm - vector+rerank | multi_doc | n=8 | hit@5 | +0.375 | [0.12, 0.75] | 3 better / 0 worse / 5 same | clear |
+| rerank-split-llm - vector+rerank | multi_doc | n=8 | MRR@10 | -0.073 | [-0.27, 0.12] | 1 better / 3 worse / 4 same | not clear |
+| rerank-split-llm - vector+rerank | multi_doc | n=8 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | multi_doc | n=8 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 8 same | not clear |
+
+#### Paired differences by difficulty bucket
+
+| comparison | questions | n | metric | mean difference | paired 95% CI | questions | interval excludes 0? |
+|---|---|---|---|---|---|---|---|
+| rerank-split-rule - vector+rerank | all headline | n=30 | hit@5 | +0.000 | [-0.13, 0.13] | 2 better / 2 worse / 26 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | MRR@10 | -0.011 | [-0.06, 0.04] | 1 better / 3 worse / 26 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 30 same | not clear |
+| rerank-split-rule - vector+rerank | all headline | n=30 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 30 same | not clear |
+| rerank-split-rule - vector+rerank | low_overlap | n=10 | hit@5 | +0.000 | [-0.30, 0.30] | 1 better / 1 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | low_overlap | n=10 | MRR@10 | -0.033 | [-0.09, 0.00] | 0 better / 2 worse / 8 same | not clear |
+| rerank-split-rule - vector+rerank | low_overlap | n=10 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 10 same | not clear |
+| rerank-split-rule - vector+rerank | low_overlap | n=10 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 10 same | not clear |
+| rerank-split-rule - vector+rerank | high_overlap | n=20 | hit@5 | +0.000 | [-0.15, 0.15] | 1 better / 1 worse / 18 same | not clear |
+| rerank-split-rule - vector+rerank | high_overlap | n=20 | MRR@10 | +0.000 | [-0.07, 0.07] | 1 better / 1 worse / 18 same | not clear |
+| rerank-split-rule - vector+rerank | high_overlap | n=20 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 20 same | not clear |
+| rerank-split-rule - vector+rerank | high_overlap | n=20 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 20 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | hit@5 | +0.067 | [-0.10, 0.23] | 4 better / 2 worse / 24 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | MRR@10 | -0.061 | [-0.15, 0.03] | 4 better / 8 worse / 18 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | hit@1 | -0.067 | [-0.17, 0.00] | 0 better / 2 worse / 28 same | not clear |
+| rerank-split-llm - vector+rerank | all headline | n=30 | doc_hit@5 | -0.033 | [-0.10, 0.00] | 0 better / 1 worse / 29 same | not clear |
+| rerank-split-llm - vector+rerank | low_overlap | n=10 | hit@5 | +0.000 | [-0.30, 0.40] | 2 better / 2 worse / 6 same | not clear |
+| rerank-split-llm - vector+rerank | low_overlap | n=10 | MRR@10 | -0.173 | [-0.38, -0.00] | 1 better / 6 worse / 3 same | clear |
+| rerank-split-llm - vector+rerank | low_overlap | n=10 | hit@1 | -0.200 | [-0.50, 0.00] | 0 better / 2 worse / 8 same | not clear |
+| rerank-split-llm - vector+rerank | low_overlap | n=10 | doc_hit@5 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 10 same | not clear |
+| rerank-split-llm - vector+rerank | high_overlap | n=20 | hit@5 | +0.100 | [0.00, 0.25] | 2 better / 0 worse / 18 same | not clear |
+| rerank-split-llm - vector+rerank | high_overlap | n=20 | MRR@10 | -0.005 | [-0.11, 0.09] | 3 better / 2 worse / 15 same | not clear |
+| rerank-split-llm - vector+rerank | high_overlap | n=20 | hit@1 | +0.000 | [0.00, 0.00] | 0 better / 0 worse / 20 same | not clear |
+| rerank-split-llm - vector+rerank | high_overlap | n=20 | doc_hit@5 | -0.050 | [-0.15, 0.00] | 0 better / 1 worse / 19 same | not clear |
+
+#### Paired differences in multi_doc coverage@5
+
+| comparison | n | metric | mean difference | paired 95% CI | questions | interval excludes 0? |
+|---|---|---|---|---|---|---|
+| rerank-split-rule - vector+rerank | n=8 | multi_doc coverage@5 | +0.062 | [-0.12, 0.25] | 2 better / 1 worse / 5 same | not clear |
+| rerank-split-llm - vector+rerank | n=8 | multi_doc coverage@5 | +0.188 | [0.06, 0.38] | 3 better / 0 worse / 5 same | clear |
+
+### Question decomposition
+
+| mode | main-table questions split | median decomposition ms | p95 decomposition ms | median total ms/question | p95 total ms/question |
+|---|---|---|---|---|---|
+| rerank-split-rule | 7/30 | 0 | 0 | 2671 | 6471 |
+| rerank-split-llm | 28/30 | 4363 | 7976 | 12478 | 18731 |
+
+**q23** (fastapi-deployment-docker.pdf, fastapi-deployment-https.md): How do I run a FastAPI container behind a proxy that handles HTTPS, and how can that proxy serve several different domains from a single IP address?
+- rerank-split-rule: `How do I run a FastAPI container behind a proxy that handles HTTPS?` | `how can that proxy serve several different domains from a single IP address?`
+- rerank-split-llm: `How do I run a FastAPI container behind a proxy that handles HTTPS?` | `How can that proxy serve several different domains from a single IP address?`
+
+**q24** (fastapi-testing.md, fastapi-settings.md): How can I run my tests with a different admin email setting, and what do I need to install to use the test client?
+- rerank-split-rule: `How can I run my tests with a different admin email setting?` | `what do I need to install to use the test client?`
+- rerank-split-llm: `How can I run my tests with a different admin email setting?` | `What do I need to install to use the test client?`
+
+**q25** (fastapi-cors.md, fastapi-middleware.md): How do I add a processing-time header to every response and let a frontend served from http://localhost:8080 read it?
+- rerank-split-rule: not split
+- rerank-split-llm: `How do I add a processing-time header to every response?` | `How do I serve a frontend from http://localhost:8080?` | `How do I make the frontend read the processing-time header?`
+
+**q27** (fastapi-deployment-concepts.pdf, fastapi-deployment-docker.pdf): How do multiple workers affect memory use, and how do I set their number in a container?
+- rerank-split-rule: `How do multiple workers affect memory use?` | `how do I set their number in a container?`
+- rerank-split-llm: `How do multiple workers affect memory use?` | `How do I set the number of workers in a container?`
+
+**q28** (sdp-solution-social-graph.md, sdp-solution-query-cache.md): How do the design solutions spread data across many machines for the social graph and the query cache?
+- rerank-split-rule: not split
+- rerank-split-llm: `How does the social graph design solution spread data across many machines?` | `How does the query cache design solution spread data across many machines?`
+
+**q29** (ollama-development.md, ollama-api.md): How do I build Ollama from source and which endpoint generates a completion?
+- rerank-split-rule: `How do I build Ollama from source?` | `which endpoint generates a completion?`
+- rerank-split-llm: `How do I build Ollama from source?` | `Which endpoint generates a completion?`
+
+**q53** (ollama-readme.md, fastapi-async.md): From a FastAPI endpoint I want to call Ollama's chat REST endpoint using a library that can't be awaited. Which URL do I send the request to, and how should I declare my endpoint function?
+- rerank-split-rule: `From a FastAPI endpoint I want to call Ollama's chat REST endpoint using a library that can't be awaited. Which URL do I send the request to?` | `how should I declare my endpoint function?`
+- rerank-split-llm: `What is Ollama's chat REST endpoint URL?` | `How to declare a FastAPI endpoint function to send a request to a non-async library?`
+
+**q54** (rate-limiting-notes.md, fastapi-middleware.md): If a client sends too many requests, which status code and header should my API return, and how can I run that check on every request in FastAPI?
+- rerank-split-rule: `If a client sends too many requests, which status code and header should my API return?` | `how can I run that check on every request in FastAPI?`
+- rerank-split-llm: `What is the HTTP status code for exceeding the rate limit?` | `What HTTP header is used to indicate rate limiting?` | `How can I implement rate limiting in FastAPI?`
+
+### Wins and losses per question
+
+**rerank-split-rule vs vector+rerank at hit@5**
+
+- rerank-split-rule hits, vector+rerank misses (2): q27 (multi_doc), q29 (multi_doc)
+- vector+rerank hits, rerank-split-rule misses (2): q41 (paraphrase), q53 (multi_doc)
+- both hit: 19; both miss: 7 (q03 (exact_term), q16 (paraphrase), q19 (paraphrase), q20 (paraphrase), q28 (multi_doc), q42 (paraphrase), q54 (multi_doc))
+
+**rerank-split-llm vs vector+rerank at hit@5**
+
+- rerank-split-llm hits, vector+rerank misses (4): q16 (paraphrase), q27 (multi_doc), q28 (multi_doc), q29 (multi_doc)
+- vector+rerank hits, rerank-split-llm misses (2): q45 (paraphrase), q46 (paraphrase)
+- both hit: 19; both miss: 5 (q03 (exact_term), q19 (paraphrase), q20 (paraphrase), q42 (paraphrase), q54 (multi_doc))
+
+
+### Questions each mode missed at k=5
+
+**vector+rerank: 9 of 30 missed at k=5**
+
+- q03: fastapi-background-tasks.md
+- q16: sdp-solution-web-crawler.pdf
+- q19: sdp-solution-pastebin.md
+- q20: fastapi-behind-a-proxy.md
+- q27: fastapi-deployment-concepts.pdf, fastapi-deployment-docker.pdf
+- q28: sdp-solution-social-graph.md, sdp-solution-query-cache.md
+- q29: ollama-development.md, ollama-api.md
+- q42: fastapi-handling-errors.md
+- q54: rate-limiting-notes.md, fastapi-middleware.md
+
+**rerank-split-rule: 9 of 30 missed at k=5**
+
+- q03: fastapi-background-tasks.md
+- q16: sdp-solution-web-crawler.pdf
+- q19: sdp-solution-pastebin.md
+- q20: fastapi-behind-a-proxy.md
+- q28: sdp-solution-social-graph.md, sdp-solution-query-cache.md
+- q41: fastapi-async.md
+- q42: fastapi-handling-errors.md
+- q53: ollama-readme.md, fastapi-async.md
+- q54: rate-limiting-notes.md, fastapi-middleware.md
+
+**rerank-split-llm: 7 of 30 missed at k=5**
+
+- q03: fastapi-background-tasks.md
+- q19: sdp-solution-pastebin.md
+- q20: fastapi-behind-a-proxy.md
+- q42: fastapi-handling-errors.md
+- q45: study-habits-notes.md
+- q46: fastapi-bigger-applications.md
+- q54: rate-limiting-notes.md, fastapi-middleware.md
+
+
+### Filtered questions: filter-correctness check
+
+| mode | n | hit@5 | MRR@10 | results returned (min-max) | results that violate the filter |
+|---|---|---|---|---|---|
+| vector+rerank | n=3 | 3/3 (100.0%) | 1.000 | 8-10 | 0 |
+| rerank-split-rule | n=3 | 3/3 (100.0%) | 1.000 | 8-10 | 0 |
+| rerank-split-llm | n=3 | 3/3 (100.0%) | 0.750 | 8-10 | 0 |
+
+| id | filter | vector+rerank | rerank-split-rule | rerank-split-llm |
+|---|---|---|---|---|
+| q37 | source_types=['pdf'] | rank 1 | rank 1 | rank 1 |
+| q38 | path_prefix=data/corpus/docs/ollama- | rank 1 | rank 1 | rank 4 |
+| q39 | date_to=2026-09-30 | rank 1 | rank 1 | rank 1 |
+
+### Top-1 scores: answerable versus unanswerable questions
+
+Scores are not comparable across modes: vector = cosine similarity, keyword = ts_rank_cd, hybrid = reciprocal-rank-fusion score (a ranking value, not a similarity); modes ending in +rerank report the reranker's raw output (a logit, not a probability); hybrid-bm25 fuses the same way as hybrid.
+
+| mode (score) | answerable: min / median / max | unanswerable: min / median / max |
+|---|---|---|
+| vector+rerank | -8.584 / 1.686 / 9.296 (n=33) | -1.587 / 2.025 / 3.327 (n=9) |
+| rerank-split-rule | -8.584 / 1.304 / 9.296 (n=33) | -1.587 / 2.025 / 3.327 (n=9) |
+| rerank-split-llm | -9.194 / -0.302 / 8.178 (n=33) | -1.587 / 2.025 / 4.159 (n=9) |
+
+| unanswerable id | vector+rerank top-1 | rerank-split-rule top-1 | rerank-split-llm top-1 |
+|---|---|---|---|
+| q31 | -0.474 | -0.474 | 1.632 |
+| q32 | 3.327 | 3.327 | 3.327 |
+| q33 | -1.587 | -1.587 | -1.587 |
+| q35 | 1.256 | 1.256 | 1.256 |
+| q36 | 1.961 | 1.961 | 1.972 |
+| q47 | 3.210 | 3.210 | 3.558 |
+| q48 | 2.800 | 2.800 | 3.645 |
+| q50 | 2.405 | 2.405 | 4.159 |
+| q51 | 2.025 | 2.025 | 2.025 |
+
+
+### Decision by the pre-registered rule
+
+| | multi_doc coverage@5 (C = 0.750) | condition 1: at least +0.15 | exact_term hit@5 (C 7) | paraphrase hit@5 (C 10) | multi_doc hit@5 (C 4) | condition 2: no category drops by more than one question | adopted? |
+|---|---|---|---|---|---|---|---|
+| R rule split | 0.812 (+0.062) | **no** | 7 | 9 (-1) | 5 | yes | **no** |
+| L LLM split | 0.938 (+0.188) | **yes** | 7 | 9 (-1) | 7 | yes | **yes** |
+
+**L is adopted.** R fails condition 1; L meets both. The rule was followed as written, including for a
+result that has costs (below).
+
+### What the result does and does not show
+
+- **Coverage and multi-doc hit@5 improved for L.** multi_doc coverage@5 rose from 0.750 to 0.938 (paired
+  +0.188, interval 0.06 to 0.38, 3 questions better and none worse of 8) and multi_doc hit@5 from 4/8 to 7/8
+  (paired +0.375, interval 0.12 to 0.75). Overall hit@5 rose from 21/30 to 23/30 (+0.067, interval -0.10 to
+  0.23, not clear). q27, q28 and q29 went from misses to hits.
+- **Ranking quality got worse, not clearly.** MRR@10 fell from 0.693 to 0.632 (paired -0.061, interval
+  -0.15 to 0.03) and hit@1 from 12/30 to 10/30 (paired -0.067, interval -0.17 to 0.00). On the
+  low-overlap questions the MRR@10 drop is -0.173 with an interval that excludes zero (-0.38 to 0.00, 10
+  questions), the one clearly negative result in the table.
+- **Two questions that C answered were lost:** q45 and q46 (paraphrase, both added in v2) are misses under L.
+  Paraphrase hit@5 fell from 10/14 to 9/14, and q38, a filtered question, went from rank 1 to rank 4.
+- **L split almost everything.** 28 of the 30 main-table questions were split, including questions that ask
+  one thing. The prompt says to return a single-ask question unchanged, but `llama3.2:3b` often returned
+  several sub-questions anyway. q25 became three sub-questions, one of which ("How do I serve a frontend
+  from http://localhost:8080?") is not what was asked. For q53 and q54 the sub-questions are paraphrases
+  that lose context ("What is Ollama's chat REST endpoint URL?"). q54 is still missed.
+- **R split 7 of 30** (the clearly two-part questions) and changed little: coverage +0.062 (not clear),
+  hit@5 unchanged (21/30), MRR@10 -0.011. Two questions gained (q27, q29) and two were lost (q41, q53).
+  Sub-questions after the first part lose the context of the first (for example "how should I declare my
+  endpoint function?").
+- **Cost.** L's median decomposition time was 4.4 s (95th percentile 8.0 s) and the median total time per
+  question rose from 2.7 s (C) to 12.5 s (95th percentile 18.7 s): the model call plus one rerank of 30
+  passages per sub-question. R costs nothing measurable at the median (2.7 s) but its 95th percentile
+  was 6.5 s, since split questions rerank twice.
+- **Small numbers.** The coverage result rests on 8 multi_doc questions; the questions q23, q24, q27 and
+  q29 have two natural halves that the model split cleanly, and several share passages (see Limitations).
+  The sub-question lists above can be read to judge whether each split is sensible.
+
+## Adopting L in the application
+
+Because the rule adopted L, it is the default for `ask`, `/api/ask` (mode `default`) and the CLI, with
+`DECOMPOSITION_ENABLED=false` returning to C, and `RERANKER_ENABLED=false` returning to plain hybrid. The
+merged list is what the `sources` event carries and what citations are validated against; the model still
+answers the original question. A failure to split (Ollama unreachable, a malformed reply) falls back to
+searching with the whole question.
+
+## Phase 2b results: context size and time to first token
+
+Both parts use configuration C's ranking, whatever Part 1 decided, as pre-registered.
+
+**Retrieval quality** (dev main table, n = 30, 8 of them multi_doc; from the saved `vector+rerank` ranking,
+chunk lengths read from the database; the budget setting needs no new search):
+
+| setting | hit | exact_term | paraphrase | multi_doc | multi_doc coverage | chunks kept (median / mean) | source chars (median / max) |
+|---|---|---|---|---|---|---|---|
+| k=3 | 17/30 (56.7%) | 7/8 | 8/14 | 2/8 | 0.625 | 3 / 3.00 | 3255 / 5538 |
+| k=4 | 19/30 (63.3%) | 7/8 | 9/14 | 3/8 | 0.688 | 4 / 4.00 | 4582 / 7611 |
+| k=5 (current) | 21/30 (70.0%) | 7/8 | 10/14 | 4/8 | 0.750 | 5 / 5.00 | 6446 / 8536 |
+| up to 5, budget 4,500 chars | 18/30 (60.0%) | 7/8 | 8/14 | 3/8 | 0.688 | 3 / 3.67 | 3730 / 4478 |
+
+Reading it: hit@k is monotonic in k here: dropping from 5 to 4 sources loses two questions (q12, q53), and
+to 3 sources four (q12, q23, q41, q53). The budget setting keeps all 5 chunks for only 10 of the 30 questions (median 3 kept, at most 5), and loses
+three questions against k=5 (q12, q23, q41) without gaining any: 18/30 against k=3's 17/30 and k=4's
+19/30, with the same multi_doc coverage as k=4 (0.688). Its source text is capped near 4,500 characters
+(maximum 4,478), against up to 8,536 for k=5.
+
+**Time to first token.** The full pipeline (vector top 30, rerank, prompt, `llama3.2:3b`) was run in one
+process on this machine, one request per question per setting, the same 5 non-evaluation questions as in the
+earlier latency measurement. Settings ran in blocks in the order k3, k4, k5, B4500, question order rotated by
+one between blocks, one uncounted warm-up question first. The clock runs from the start of the question
+(retrieval included) to the first generated piece.
+
+**A first run was discarded.** In it, the budget block returned first tokens of 4.4 to 5.8 s, which is
+mostly the 3.5 to 5.1 s of retrieval, because four of its five prompts were identical to the k=5 prompts for
+the same questions (the budget removed nothing for them) and Ollama reuses a cached prompt for an
+identical or shared-prefix prompt. The sources come first in the prompt, so the k=4 and k=5 prompts also share
+a long prefix with k=3. Those numbers measured the cache, not the context size. The run was repeated
+with a unique random prefix on the system prompt of every request (a few extra tokens that
+stop any request from reusing another's cache); the first run's file is not part of the results.
+
+| setting | median first token | range | median retrieval | median source chars | median prompt chars |
+|---|---|---|---|---|---|
+| k3 | 25.2 s | 21.6 to 36.7 s | 4.63 s | 2157 | 3540 |
+| k4 | 30.6 s | 18.3 to 35.3 s | 3.46 s | 3459 | 5233 |
+| k5 | 38.6 s | 22.8 to 52.5 s | 3.06 s | 4165 | 5627 |
+| B4500 | 33.8 s | 26.0 to 41.2 s | 3.74 s | 4165 | 5610 |
+
+**Reading it.** Five questions, one request each per setting, on one machine: this cannot separate small
+differences. The medians rise with the amount of source text (k=3 25.2 s, k=4 30.6 s, k=5 38.6 s, with median
+prompts of about 3,500, 5,200 and 5,600 characters), which is what is expected, and k=3 is about 13 s
+(a third) faster than k=5. But the spread inside each setting is as large as the gaps between settings, and
+the best evidence of the noise is the budget setting: for four of the five questions it kept exactly the same
+five chunks as k=5 (identical prompts apart from the random prefix), yet their first tokens differed from
+k=5's by 0.0 s, 3.2 s, 5.8 s and 11.3 s, in both directions. The budget setting's median (33.8 s) is therefore
+not a result of the budget; only the one question it actually changed (the startup question, 6,372 characters
+cut to 4,211 by dropping two chunks: 44.2 s at k=5, 30.8 s with the budget) is informative, and that is
+one question. Retrieval time is about 3 to 5 s for every setting (reranking 30 passages; one k=5 run took
+9.6 s), so the differences come from how much source text the language model reads before it writes.
+
 ## Suspected label issues
 
 Nothing was changed in the question file. Candidates noticed in Phase 2:
