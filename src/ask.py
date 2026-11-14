@@ -17,7 +17,16 @@ from .db.connection import get_connection
 from .ingestion.embedder import Embedder
 from .llm.base import LLMError
 from .llm.ollama import NUM_CTX, OllamaLLM
-from .retrieval.defaults import RERANK_CANDIDATES, RerankerLoadError, SELECTABLE_MODES, load_reranker, reranker_enabled, resolve_mode
+from .retrieval.defaults import (
+    SELECTABLE_MODES,
+    SPLIT_MODE,
+    RerankerLoadError,
+    decomposition_enabled,
+    load_reranker,
+    make_decomposer,
+    reranker_enabled,
+    resolve_mode,
+)
 from .synthesis.answer import Answer, answer_question_stream
 
 SOURCE_PREVIEW_CHARS = 120
@@ -127,8 +136,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--k", type=int, default=5, help="how many sources to retrieve (default 5)")
     parser.add_argument(
         "--mode", choices=SELECTABLE_MODES, default=None,
-        help="how to search (default: vector search reranked by the cross-encoder, or hybrid when "
-        "RERANKER_ENABLED=false)",
+        help="how to search (default: the question is split into sub-questions when it asks several things, "
+        "each is searched by vector and reranked, and the results are merged; vector+rerank when "
+        "DECOMPOSITION_ENABLED=false; hybrid when RERANKER_ENABLED=false)",
     )
     parser.add_argument("--model", help="Ollama model name (default: OLLAMA_MODEL or llama3.2:3b)")
     parser.add_argument(
@@ -154,7 +164,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        mode = resolve_mode(args.mode, reranker_enabled())
+        reranking = reranker_enabled()
+        splitting = reranking and decomposition_enabled()
+        mode = resolve_mode(args.mode, reranking, splitting)
     except ValueError as error:
         print(f"{error}", file=sys.stderr)
         return 2
@@ -166,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{error}", file=sys.stderr)
             return 2
 
+    decomposer = make_decomposer(args.model) if mode == SPLIT_MODE else None
     llm = _PromptWatcher(OllamaLLM(model=args.model), args.show_prompt)
     embedder = Embedder()
     # Load the embedding model now, so the timings below measure the question,
@@ -177,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         with conn:
             stream = answer_question_stream(
                 args.question, conn, embedder, llm, k=args.k, mode=mode, filters=filters,
-                reranker=reranker, rerank_candidates=RERANK_CANDIDATES,
+                reranker=reranker, decomposer=decomposer,
             )
             while True:
                 try:

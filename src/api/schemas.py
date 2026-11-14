@@ -85,9 +85,10 @@ class FiltersIn(BaseModel):
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
     k: int = Field(default=5, ge=1, le=10)
-    # "default" = what the server is set up for: vector search reranked by the cross-encoder, or plain
-    # hybrid when RERANKER_ENABLED=false. The other modes never rerank, except "vector+rerank".
-    mode: Literal["default", "vector", "keyword", "hybrid", "vector+rerank"] = "default"
+    # "default" = what the server is set up for: questions split into sub-questions, each searched by vector
+    # and reranked, then merged ("rerank-split-llm"); or "vector+rerank" when DECOMPOSITION_ENABLED=false;
+    # or plain hybrid when RERANKER_ENABLED=false. The other modes never rerank or split.
+    mode: Literal["default", "vector", "keyword", "hybrid", "vector+rerank", "rerank-split-llm"] = "default"
     filters: FiltersIn | None = None
 
     @field_validator("question")

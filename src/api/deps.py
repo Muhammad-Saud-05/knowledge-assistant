@@ -36,6 +36,11 @@ def get_reranker(request: Request):
     return getattr(request.app.state, "reranker", None)
 
 
+def get_decomposer(request: Request):
+    """The question splitter, or None when splitting (or reranking) is switched off."""
+    return getattr(request.app.state, "decomposer", None)
+
+
 def get_llm(request: Request):
     llm = getattr(request.app.state, "llm", None)
     if llm is None:

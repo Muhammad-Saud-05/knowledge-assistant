@@ -10,7 +10,7 @@ from collections.abc import Generator
 from dataclasses import dataclass, field
 
 from ..retrieval.filters import SearchFilters
-from ..retrieval.hybrid import search
+from ..retrieval.defaults import retrieve
 from ..retrieval.models import RetrievedChunk
 
 NOT_FOUND = "I couldn't find this in your documents."
@@ -172,7 +172,7 @@ def answer_question_stream(
     mode: str = "hybrid",
     filters: SearchFilters | None = None,
     reranker=None,
-    rerank_candidates: int = 30,
+    decomposer=None,
 ) -> Generator[str, None, Answer]:
     """Yield the answer piece by piece; the generator's return value is the Answer.
 
@@ -184,10 +184,7 @@ def answer_question_stream(
             answer = done.value
     """
     started = time.perf_counter()
-    chunks = search(
-        conn, embedder, question, k=k, mode=mode, filters=filters,
-        reranker=reranker, rerank_candidates=rerank_candidates,
-    )
+    chunks = retrieve(conn, embedder, question, k, mode, filters, reranker, decomposer)
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:
@@ -215,14 +212,11 @@ def answer_question(
     mode: str = "hybrid",
     filters: SearchFilters | None = None,
     reranker=None,
-    rerank_candidates: int = 30,
+    decomposer=None,
 ) -> Answer:
     """Answer in one go (no streaming)."""
     started = time.perf_counter()
-    chunks = search(
-        conn, embedder, question, k=k, mode=mode, filters=filters,
-        reranker=reranker, rerank_candidates=rerank_candidates,
-    )
+    chunks = retrieve(conn, embedder, question, k, mode, filters, reranker, decomposer)
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:

@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from ..db.pool import create_pool
 from ..ingestion.embedder import Embedder
 from ..llm.ollama import OllamaLLM
-from ..retrieval.defaults import load_reranker
+from ..retrieval.defaults import load_reranker, make_decomposer
 from . import ask, documents, health, ingest
 from .config import Settings, load_settings
 from .observability import RequestLogMiddleware, configure_logging, request_id_of
@@ -62,6 +62,13 @@ async def lifespan(app: FastAPI):
         logger.info("reranker loaded: %s", app.state.reranker.model_name)
     else:
         logger.info("reranking is switched off; using plain hybrid search")
+
+    # Question splitting uses the language model, so it needs no loading of its own; any failure of a
+    # single split falls back to searching with the whole question. It needs the reranker.
+    app.state.decomposer = None
+    if app.state.reranker is not None and app.state.settings.decomposition_enabled:
+        app.state.decomposer = make_decomposer()
+        logger.info("question splitting is on")
 
     llm = OllamaLLM()
     app.state.llm = llm

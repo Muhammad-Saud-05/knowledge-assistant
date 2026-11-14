@@ -17,14 +17,18 @@ from .ingestion.embedder import Embedder
 from .retrieval.defaults import (
     RERANK_MODE,
     SELECTABLE_MODES,
+    SPLIT_MODE,
     RerankerLoadError,
+    decomposition_enabled,
     load_reranker,
+    make_decomposer,
     reranker_enabled,
     resolve_mode,
+    retrieve,
 )
 from .retrieval.filters import SearchFilters
 from .retrieval.fusion import reciprocal_rank_fusion
-from .retrieval.hybrid import DEFAULT_CANDIDATES, search
+from .retrieval.hybrid import DEFAULT_CANDIDATES
 from .retrieval.keyword import keyword_search
 from .retrieval.models import RetrievedChunk
 from .retrieval.vector import vector_search
@@ -137,12 +141,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         enabled = reranker_enabled()
         if args.mode:
-            resolve_mode(args.mode, enabled)
+            resolve_mode(args.mode, enabled, enabled and decomposition_enabled())
     except ValueError as error:
         print(f"{error}", file=sys.stderr)
         return 2
     reranker = None
-    if enabled and args.mode in (None, RERANK_MODE):
+    if enabled and args.mode in (None, RERANK_MODE, SPLIT_MODE):
         try:
             reranker = load_reranker()
         except RerankerLoadError as error:
@@ -155,9 +159,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Filters: {filters}")
     with conn:
         if args.mode:
-            results = search(
-                conn, embedder, args.query, k=args.k, mode=args.mode, filters=filters,
-                reranker=reranker if args.mode == RERANK_MODE else None,
+            results = retrieve(
+                conn, embedder, args.query, args.k, args.mode, filters, reranker,
+                make_decomposer() if args.mode == SPLIT_MODE else None,
             )
             print_results(args.mode.upper(), results)
         else:

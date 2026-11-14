@@ -3,6 +3,8 @@
 ALLOWED_ORIGINS  comma-separated web addresses allowed to call the API from a browser
                  (default: the Vite dev server on http://localhost:5173 and http://127.0.0.1:5173)
 MAX_UPLOAD_MB    largest file /api/ingest accepts (default 25)
+DECOMPOSITION_ENABLED true (default) to split questions that ask several things into sub-questions
+                 (needs the reranker); false to search with the whole question
 RERANKER_ENABLED true (default) to rerank search results with the cross-encoder, false for plain hybrid search
 """
 
@@ -31,6 +33,7 @@ class Settings:
     # A question and its filters are tiny; anything bigger than this is refused up front.
     max_json_body_bytes: int = 64 * 1024
     reranker_enabled: bool = True
+    decomposition_enabled: bool = True
 
 
 def parse_origins(text: str) -> tuple[str, ...]:
@@ -61,4 +64,5 @@ def load_settings() -> Settings:
         allowed_origins=origins,
         max_upload_bytes=int(max_mb * 1024 * 1024),
         reranker_enabled=parse_enabled(os.environ.get("RERANKER_ENABLED")),
+        decomposition_enabled=parse_enabled(os.environ.get("DECOMPOSITION_ENABLED"), "DECOMPOSITION_ENABLED"),
     )
