@@ -943,6 +943,41 @@ the dev finding that the two groups overlap. For A, the fused scores overlap in 
   come from separate runs on one machine and vary.
 - q04 (default `keep_alive`) is missed by both configurations.
 
+## Application latency with the reranker wired in
+
+Measured through the running API (`POST /api/ask`, `uvicorn` on port 8011, one question at a time, the
+local `llama3.2:3b` model). **How:** a script sent each question and timed, on the client, the interval from
+sending the request to the arrival of the first `token` event. The server was started twice, once with
+`RERANKER_ENABLED=false` (plain hybrid, configuration A) and once with the reranker (configuration C). In
+each run one warm-up question (not counted) loaded the language model, then the same five new questions
+(none is an evaluation question) were asked once each, in the same order, all of one configuration before
+the other so that no question followed an identical prompt. The server's own retrieval time comes from the
+`done` event.
+
+| question (abbreviated) | A: first token | A: retrieval | A: source text | C: first token | C: retrieval | C: source text |
+|---|---|---|---|---|---|---|
+| custom status code from an endpoint | 33.9 s | 0.10 s | 5343 chars | 31.3 s | 2.58 s | 4407 chars |
+| what Ollama returns for a streamed chat | 61.3 s | 0.14 s | 8544 chars | 36.8 s | 2.97 s | 4165 chars |
+| why a load balancer helps | 28.2 s | 0.24 s | 4967 chars | 30.7 s | 2.53 s | 3935 chars |
+| startup and shutdown code in FastAPI | 33.4 s | 0.09 s | 5910 chars | 43.3 s | 2.55 s | 6372 chars |
+| exponential backoff when retrying | 72.3 s | 0.14 s | 10050 chars | 21.5 s | 2.43 s | 2612 chars |
+| **median** | **33.9 s** | **0.14 s** | 5910 chars | **31.3 s** | **2.55 s** | 4165 chars |
+
+**Reading it.**
+
+- The reranker adds about 2.4 s of retrieval time (median 0.14 s to 2.55 s), consistent with the 2.9 s
+  median in the dev evaluation.
+- The median time to first token was nonetheless 2.6 s *lower* with the reranker (31.3 s against 33.9 s).
+  That is not a speed-up from reranking. The first token waits mostly for the language model to read the
+  prompt, which grows with the length of the sources: the slowest runs are the ones with the longest sources
+  (10,050 characters took 72 s; 2,612 took 21.5 s). On these five questions the reranked top five happened
+  to be shorter than hybrid's (median 4165 against 5910 characters), which more than offset the 2.4 s.
+- Five questions on one machine, one run each, cannot separate a 2.4 s cost from this variation (the range
+  was 28 to 72 s without the reranker and 22 to 43 s with it). The honest statement is: reranking costs about
+  2.4 s of retrieval time, and its effect on the time to the first token was not distinguishable from the
+  variation caused by prompt length.
+- The sources appear in the `sources` event after about 0.8 s without the reranker and about 3.4 s with it.
+
 ## Suspected label issues
 
 Nothing was changed in the question file. Candidates noticed in Phase 2:
