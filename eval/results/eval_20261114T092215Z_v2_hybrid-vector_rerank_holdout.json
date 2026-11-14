@@ -1,0 +1,2853 @@
+{
+ "created_utc": "2026-11-14T09:22:15+00:00",
+ "split": "holdout",
+ "question_set": "v2",
+ "modes": [
+  "hybrid",
+  "vector+rerank"
+ ],
+ "k": 5,
+ "candidates": 30,
+ "depth": 10,
+ "embedding_model": "BAAI/bge-small-en-v1.5",
+ "documents": 30,
+ "chunks": 502,
+ "questions_file": "questions.json",
+ "questions_sha256": "d1cf32202152468cef9ade19eea69e0ab2776a8d3e893edf3aad44a557806010",
+ "git_commit": "b1ab677",
+ "rerank_candidates": 30,
+ "reranker": {
+  "model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "input_style": "plain",
+  "max_length": 512,
+  "parameters_millions": 22.7,
+  "float32_mb": 91,
+  "load_seconds": 2.5,
+  "activation": "raw model output (no sigmoid)"
+ },
+ "note": "ranked chunk ids and scores only; no chunk text",
+ "questions": [
+  {
+   "id": "q04",
+   "category": "exact_term",
+   "difficulty": "high_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/ollama-api.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.1084,
+     "top1_score": 0.03201844262295082,
+     "entries": [
+      {
+       "chunk_id": 238,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03201844262295082,
+       "vector_rank": 4,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 239,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030017921146953404,
+       "vector_rank": 12,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 285,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.02928692699490662,
+       "vector_rank": 2,
+       "keyword_rank": 16,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 249,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02862400327131466,
+       "vector_rank": 13,
+       "keyword_rank": 7,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 242,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.028298204527712725,
+       "vector_rank": 1,
+       "keyword_rank": 24,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 248,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02736726874657909,
+       "vector_rank": 27,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 250,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.027106227106227107,
+       "vector_rank": 18,
+       "keyword_rank": 10,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 282,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.025015634771732333,
+       "vector_rank": 22,
+       "keyword_rank": 18,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 286,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.023735955056179776,
+       "vector_rank": 29,
+       "keyword_rank": 20,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 43,
+       "path": "sample_corpus/rate-limiting-notes.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015873015873015872,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.3671,
+     "top1_score": -2.425602912902832,
+     "entries": [
+      {
+       "chunk_id": 285,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -2.425602912902832,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 264,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -2.4389538764953613,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 242,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.248616695404053,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 275,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.445255756378174,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 261,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.291720867156982,
+       "vector_rank": 21,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 298,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -5.352983474731445,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 256,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.947399139404297,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 238,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -6.23443078994751,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 286,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -6.3011579513549805,
+       "vector_rank": 29,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 282,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -6.842377662658691,
+       "vector_rank": 22,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q08",
+   "category": "exact_term",
+   "difficulty": "high_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/pgvector-readme.pdf"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0397,
+     "top1_score": 0.03252247488101533,
+     "entries": [
+      {
+       "chunk_id": 302,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 0.03252247488101533,
+       "vector_rank": 2,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 303,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.0317780580075662,
+       "vector_rank": 1,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 312,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.031754032258064516,
+       "vector_rank": 4,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 305,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030798389007344232,
+       "vector_rank": 7,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 310,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030798389007344232,
+       "vector_rank": 3,
+       "keyword_rank": 7,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 311,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030776515151515152,
+       "vector_rank": 6,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 313,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030536130536130537,
+       "vector_rank": 5,
+       "keyword_rank": 6,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 308,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.028790389395194696,
+       "vector_rank": 8,
+       "keyword_rank": 11,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 314,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.028381642512077296,
+       "vector_rank": 12,
+       "keyword_rank": 9,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 301,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02800626713670192,
+       "vector_rank": 9,
+       "keyword_rank": 14,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.7317,
+     "top1_score": 2.821718692779541,
+     "entries": [
+      {
+       "chunk_id": 302,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 2.821718692779541,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 303,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 2.444481372833252,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 305,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.46785232424736023,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 307,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.3278687000274658,
+       "vector_rank": 25,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 308,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.39617919921875,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 312,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -2.6682286262512207,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 301,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -2.7078018188476562,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 309,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -3.425224781036377,
+       "vector_rank": 11,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 314,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.630087852478027,
+       "vector_rank": 12,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 310,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.986952781677246,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q14",
+   "category": "paraphrase",
+   "difficulty": "low_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/system-design-primer.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0484,
+     "top1_score": 0.0317780580075662,
+     "entries": [
+      {
+       "chunk_id": 499,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.0317780580075662,
+       "vector_rank": 5,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 484,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03128054740957967,
+       "vector_rank": 6,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 498,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03036576949620428,
+       "vector_rank": 9,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 487,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029631255487269536,
+       "vector_rank": 8,
+       "keyword_rank": 7,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 456,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029206349206349208,
+       "vector_rank": 3,
+       "keyword_rank": 15,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 333,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.02797339593114241,
+       "vector_rank": 11,
+       "keyword_rank": 12,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 483,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.027417840375586856,
+       "vector_rank": 15,
+       "keyword_rank": 11,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 349,
+       "path": "data/corpus/docs/sdp-solution-pastebin.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.026785714285714284,
+       "vector_rank": 10,
+       "keyword_rank": 20,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 377,
+       "path": "data/corpus/docs/sdp-solution-sales-rank.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.025015634771732333,
+       "vector_rank": 18,
+       "keyword_rank": 22,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 392,
+       "path": "data/corpus/docs/sdp-solution-scaling-aws.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.024934585193166076,
+       "vector_rank": 29,
+       "keyword_rank": 13,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.3888,
+     "top1_score": 2.777820348739624,
+     "entries": [
+      {
+       "chunk_id": 459,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 2.777820348739624,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 458,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 1.5398962497711182,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 456,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -0.9468749761581421,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 457,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -3.207174777984619,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 499,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.8416829109191895,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 484,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.3654890060424805,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 487,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.53336763381958,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 498,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -7.373568534851074,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 215,
+       "path": "data/corpus/docs/fastapi-settings.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -7.723822593688965,
+       "vector_rank": 22,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 333,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -7.888416290283203,
+       "vector_rank": 11,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q18",
+   "category": "paraphrase",
+   "difficulty": "low_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/sdp-solution-social-graph.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0467,
+     "top1_score": 0.03149801587301587,
+     "entries": [
+      {
+       "chunk_id": 404,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03149801587301587,
+       "vector_rank": 4,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 406,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03057889822595705,
+       "vector_rank": 3,
+       "keyword_rank": 8,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 403,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03030998851894374,
+       "vector_rank": 5,
+       "keyword_rank": 7,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 401,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02928692699490662,
+       "vector_rank": 2,
+       "keyword_rank": 16,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 418,
+       "path": "data/corpus/docs/sdp-solution-twitter.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.026397515527950312,
+       "vector_rank": 9,
+       "keyword_rank": 24,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 165,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": null,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 402,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 0.01639344262295082,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 147,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.016129032258064516,
+       "vector_rank": null,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 148,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015625,
+       "vector_rank": null,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 176,
+       "path": "data/corpus/docs/fastapi-deployment-https.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015384615384615385,
+       "vector_rank": null,
+       "keyword_rank": 5,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.4747,
+     "top1_score": -9.187891960144043,
+     "entries": [
+      {
+       "chunk_id": 403,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -9.187891960144043,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 402,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": -9.47862434387207,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 406,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -9.93922233581543,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 404,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -9.939530372619629,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 401,
+       "path": "data/corpus/docs/sdp-solution-social-graph.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -10.548291206359863,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 61,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.862125396728516,
+       "vector_rank": 24,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 64,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.071479797363281,
+       "vector_rank": 29,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 511,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.210512161254883,
+       "vector_rank": 18,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 386,
+       "path": "data/corpus/docs/sdp-solution-scaling-aws.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.255484580993652,
+       "vector_rank": 25,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 36,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.30282211303711,
+       "vector_rank": 12,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q22",
+   "category": "paraphrase",
+   "difficulty": "high_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "sample_corpus/rag-beginners-guide.pdf"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.044,
+     "top1_score": 0.03252247488101533,
+     "entries": [
+      {
+       "chunk_id": 35,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 0.03252247488101533,
+       "vector_rank": 1,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 33,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.0315136476426799,
+       "vector_rank": 2,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 50,
+       "path": "sample_corpus/study-habits-notes.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.030117753623188404,
+       "vector_rank": 4,
+       "keyword_rank": 9,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 42,
+       "path": "sample_corpus/rate-limiting-notes.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.026387470207694927,
+       "vector_rank": 6,
+       "keyword_rank": 29,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 491,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": null,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 47,
+       "path": "sample_corpus/study-habits-notes.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015873015873015872,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 149,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015873015873015872,
+       "vector_rank": null,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 360,
+       "path": "data/corpus/docs/sdp-solution-query-cache.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015625,
+       "vector_rank": null,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 458,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015384615384615385,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 38,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.015151515151515152,
+       "vector_rank": null,
+       "keyword_rank": 6,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.0216,
+     "top1_score": 1.9746239185333252,
+     "entries": [
+      {
+       "chunk_id": 35,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 1.9746239185333252,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 42,
+       "path": "sample_corpus/rate-limiting-notes.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -6.710376739501953,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 36,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -7.419491767883301,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 33,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -8.622583389282227,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 215,
+       "path": "data/corpus/docs/fastapi-settings.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -9.535335540771484,
+       "vector_rank": 13,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 486,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.059980392456055,
+       "vector_rank": 26,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 58,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.161928176879883,
+       "vector_rank": 30,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 459,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.327642440795898,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 458,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.343310356140137,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 304,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.356246948242188,
+       "vector_rank": 12,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q26",
+   "category": "multi_doc",
+   "difficulty": "high_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/fastapi-middleware.md",
+    "data/corpus/docs/fastapi-background-tasks.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.039,
+     "top1_score": 0.032266458495966696,
+     "entries": [
+      {
+       "chunk_id": 199,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 0.032266458495966696,
+       "vector_rank": 3,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 202,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03200204813108039,
+       "vector_rank": 2,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 82,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": 1,
+       "doc_ok": true,
+       "score": 0.03131881575727918,
+       "vector_rank": 1,
+       "keyword_rank": 7,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 86,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030330882352941176,
+       "vector_rank": 4,
+       "keyword_rank": 8,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 141,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.02967032967032967,
+       "vector_rank": 10,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 88,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02923602219376867,
+       "vector_rank": 6,
+       "keyword_rank": 11,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 505,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.029198635976129584,
+       "vector_rank": 8,
+       "keyword_rank": 9,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 85,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029138513513513514,
+       "vector_rank": 14,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 155,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.0261986301369863,
+       "vector_rank": 20,
+       "keyword_rank": 13,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 84,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.025856389986824768,
+       "vector_rank": 9,
+       "keyword_rank": 28,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.1738,
+     "top1_score": 1.2136993408203125,
+     "entries": [
+      {
+       "chunk_id": 199,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 1.2136993408203125,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 82,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": 1,
+       "doc_ok": true,
+       "score": 0.5324703454971313,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 134,
+       "path": "data/corpus/docs/fastapi-cors.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -0.5020221471786499,
+       "vector_rank": 13,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 86,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.1836657524108887,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 202,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.7424750328063965,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 135,
+       "path": "data/corpus/docs/fastapi-cors.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -1.8642469644546509,
+       "vector_rank": 17,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 200,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -2.5264430046081543,
+       "vector_rank": 11,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 84,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -3.4023959636688232,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 201,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.446715354919434,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 88,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.828984260559082,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q30",
+   "category": "multi_doc",
+   "difficulty": "high_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "sample_corpus/rag-beginners-guide.pdf",
+    "data/corpus/docs/pgvector-readme.pdf"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0429,
+     "top1_score": 0.03131881575727918,
+     "entries": [
+      {
+       "chunk_id": 301,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": 1,
+       "doc_ok": true,
+       "score": 0.03131881575727918,
+       "vector_rank": 1,
+       "keyword_rank": 7,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 309,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03125,
+       "vector_rank": 4,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 34,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.031024531024531024,
+       "vector_rank": 3,
+       "keyword_rank": 6,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 311,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.031024531024531024,
+       "vector_rank": 6,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 299,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030621785881252923,
+       "vector_rank": 2,
+       "keyword_rank": 9,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 312,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029827662395050816,
+       "vector_rank": 13,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 300,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029469122426868905,
+       "vector_rank": 11,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 315,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029051670471052084,
+       "vector_rank": 19,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 292,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.028991596638655463,
+       "vector_rank": 8,
+       "keyword_rank": 10,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 321,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.028814262023217248,
+       "vector_rank": 7,
+       "keyword_rank": 12,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.6046,
+     "top1_score": 1.9676964282989502,
+     "entries": [
+      {
+       "chunk_id": 299,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 1.9676964282989502,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 301,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": 1,
+       "doc_ok": true,
+       "score": 1.082900047302246,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 309,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.14856289327144623,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 321,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -0.8412162661552429,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 34,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.3041951656341553,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 36,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": 0,
+       "doc_ok": true,
+       "score": -1.9921507835388184,
+       "vector_rank": 10,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 311,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -2.7701427936553955,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 313,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.444108963012695,
+       "vector_rank": 15,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 33,
+       "path": "sample_corpus/rag-beginners-guide.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.123989582061768,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 312,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.442548751831055,
+       "vector_rank": 13,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q34",
+   "category": "unanswerable",
+   "difficulty": null,
+   "headline": true,
+   "holdout": true,
+   "answerable": false,
+   "expected_docs": [],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0362,
+     "top1_score": 0.029906956136464335,
+     "entries": [
+      {
+       "chunk_id": 241,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.029906956136464335,
+       "vector_rank": 1,
+       "keyword_rank": 14,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 104,
+       "path": "data/corpus/docs/fastapi-behind-a-proxy.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": null,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 247,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.016129032258064516,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 463,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.016129032258064516,
+       "vector_rank": null,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 248,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015873015873015872,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 473,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015873015873015872,
+       "vector_rank": null,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 140,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015625,
+       "vector_rank": null,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 252,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015625,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 73,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015384615384615385,
+       "vector_rank": null,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 239,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015384615384615385,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.5567,
+     "top1_score": -11.142902374267578,
+     "entries": [
+      {
+       "chunk_id": 84,
+       "path": "data/corpus/docs/fastapi-background-tasks.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.142902374267578,
+       "vector_rank": 27,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 266,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.146060943603516,
+       "vector_rank": 15,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 271,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.171758651733398,
+       "vector_rank": 10,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 303,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.171875,
+       "vector_rank": 28,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 269,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.183435440063477,
+       "vector_rank": 11,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 239,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.19368839263916,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 363,
+       "path": "data/corpus/docs/sdp-solution-query-cache.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.194183349609375,
+       "vector_rank": 26,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 71,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.198436737060547,
+       "vector_rank": 20,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 338,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.206687927246094,
+       "vector_rank": 30,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 256,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -11.206869125366211,
+       "vector_rank": 25,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q40",
+   "category": "filtered",
+   "difficulty": "high_overlap",
+   "headline": false,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "sample_corpus/git-workflow-cheatsheet.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0807,
+     "top1_score": 0.03278688524590164,
+     "entries": [
+      {
+       "chunk_id": 30,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 0.03278688524590164,
+       "vector_rank": 1,
+       "keyword_rank": 1,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 27,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03200204813108039,
+       "vector_rank": 3,
+       "keyword_rank": 2,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 31,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.031754032258064516,
+       "vector_rank": 2,
+       "keyword_rank": 4,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 29,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03149801587301587,
+       "vector_rank": 4,
+       "keyword_rank": 3,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 28,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03076923076923077,
+       "vector_rank": 5,
+       "keyword_rank": 5,
+       "filter_ok": true
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 0.0929,
+     "top1_score": 2.956782579421997,
+     "entries": [
+      {
+       "chunk_id": 30,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 2.956782579421997,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 31,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -3.6020588874816895,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 27,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.617254257202148,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 29,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -7.260190010070801,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": true
+      },
+      {
+       "chunk_id": 28,
+       "path": "sample_corpus/git-workflow-cheatsheet.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -9.560473442077637,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": true
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q44",
+   "category": "paraphrase",
+   "difficulty": "low_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/sdp-solution-mint.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0407,
+     "top1_score": 0.03200204813108039,
+     "entries": [
+      {
+       "chunk_id": 330,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.03200204813108039,
+       "vector_rank": 3,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 328,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.029138513513513514,
+       "vector_rank": 4,
+       "keyword_rank": 14,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 325,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02844163539403516,
+       "vector_rank": 1,
+       "keyword_rank": 23,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 165,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": null,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 326,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.016129032258064516,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 113,
+       "path": "data/corpus/docs/fastapi-bigger-applications.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015873015873015872,
+       "vector_rank": null,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 208,
+       "path": "data/corpus/docs/fastapi-settings.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015625,
+       "vector_rank": null,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 67,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015384615384615385,
+       "vector_rank": null,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 371,
+       "path": "data/corpus/docs/sdp-solution-sales-rank.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015384615384615385,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 114,
+       "path": "data/corpus/docs/fastapi-bigger-applications.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.015151515151515152,
+       "vector_rank": null,
+       "keyword_rank": 6,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.1152,
+     "top1_score": -4.305255889892578,
+     "entries": [
+      {
+       "chunk_id": 330,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.305255889892578,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 328,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.351895332336426,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 325,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -5.437627792358398,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 326,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -7.535027503967285,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 329,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": -9.119407653808594,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 331,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -9.579322814941406,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 111,
+       "path": "data/corpus/docs/fastapi-bigger-applications.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -9.891214370727539,
+       "vector_rank": 16,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 333,
+       "path": "data/corpus/docs/sdp-solution-mint.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -9.923428535461426,
+       "vector_rank": 28,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 374,
+       "path": "data/corpus/docs/sdp-solution-sales-rank.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.045267105102539,
+       "vector_rank": 25,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 49,
+       "path": "sample_corpus/study-habits-notes.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -10.088693618774414,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q49",
+   "category": "unanswerable",
+   "difficulty": null,
+   "headline": true,
+   "holdout": true,
+   "answerable": false,
+   "expected_docs": [],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0386,
+     "top1_score": 0.030621785881252923,
+     "entries": [
+      {
+       "chunk_id": 156,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.030621785881252923,
+       "vector_rank": 9,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 142,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.03015873015873016,
+       "vector_rank": 3,
+       "keyword_rank": 10,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 162,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.029273504273504274,
+       "vector_rank": 12,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 153,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.029030910609857977,
+       "vector_rank": 16,
+       "keyword_rank": 3,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 124,
+       "path": "data/corpus/docs/fastapi-bigger-applications.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.028309409888357256,
+       "vector_rank": 6,
+       "keyword_rank": 16,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 158,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.0259915611814346,
+       "vector_rank": 19,
+       "keyword_rank": 15,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 230,
+       "path": "data/corpus/docs/fastapi-websockets.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.025238095238095237,
+       "vector_rank": 15,
+       "keyword_rank": 24,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 199,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.025062266500622665,
+       "vector_rank": 13,
+       "keyword_rank": 28,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 117,
+       "path": "data/corpus/docs/fastapi-bigger-applications.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 141,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": null,
+       "keyword_rank": 1,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.1568,
+     "top1_score": -1.9739714860916138,
+     "entries": [
+      {
+       "chunk_id": 94,
+       "path": "data/corpus/docs/fastapi-behind-a-proxy.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -1.9739714860916138,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 142,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -1.9947166442871094,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 156,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -2.175401449203491,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 102,
+       "path": "data/corpus/docs/fastapi-behind-a-proxy.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -2.235504627227783,
+       "vector_rank": 14,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 153,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -2.3684725761413574,
+       "vector_rank": 16,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 158,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -2.8330068588256836,
+       "vector_rank": 19,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 162,
+       "path": "data/corpus/docs/fastapi-deployment-docker.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -3.137373447418213,
+       "vector_rank": 12,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 132,
+       "path": "data/corpus/docs/fastapi-cors.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -3.4572083950042725,
+       "vector_rank": 25,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 232,
+       "path": "data/corpus/docs/fastapi-websockets.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -3.9130945205688477,
+       "vector_rank": 22,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 199,
+       "path": "data/corpus/docs/fastapi-middleware.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -4.175513744354248,
+       "vector_rank": 13,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q52",
+   "category": "unanswerable",
+   "difficulty": null,
+   "headline": true,
+   "holdout": true,
+   "answerable": false,
+   "expected_docs": [],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0497,
+     "top1_score": 0.031754032258064516,
+     "entries": [
+      {
+       "chunk_id": 277,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.031754032258064516,
+       "vector_rank": 4,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 281,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.030886196246139225,
+       "vector_rank": 9,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 283,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.028787260106165783,
+       "vector_rank": 2,
+       "keyword_rank": 19,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 275,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.0287391216352965,
+       "vector_rank": 1,
+       "keyword_rank": 21,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 282,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.02862400327131466,
+       "vector_rank": 7,
+       "keyword_rank": 13,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 285,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.028484848484848484,
+       "vector_rank": 6,
+       "keyword_rank": 15,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 284,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.027799227799227798,
+       "vector_rank": 10,
+       "keyword_rank": 14,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 290,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.026856524873828405,
+       "vector_rank": 13,
+       "keyword_rank": 16,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 288,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.026540946394272742,
+       "vector_rank": 23,
+       "keyword_rank": 9,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 280,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.025528455284552845,
+       "vector_rank": 15,
+       "keyword_rank": 22,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.2898,
+     "top1_score": 2.7173380851745605,
+     "entries": [
+      {
+       "chunk_id": 285,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 2.7173380851745605,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 276,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 2.0302021503448486,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 281,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 1.5659353733062744,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 283,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 1.5642894506454468,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 275,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.668015718460083,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 286,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.3641282021999359,
+       "vector_rank": 12,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 298,
+       "path": "data/corpus/docs/ollama-readme.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -0.03428236395120621,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 261,
+       "path": "data/corpus/docs/ollama-api.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -0.12173061072826385,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 280,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -0.5273730754852295,
+       "vector_rank": 15,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 277,
+       "path": "data/corpus/docs/ollama-development.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -0.8004330396652222,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "q55",
+   "category": "multi_doc",
+   "difficulty": "high_overlap",
+   "headline": true,
+   "holdout": true,
+   "answerable": true,
+   "expected_docs": [
+    "data/corpus/docs/fastapi-testing.md",
+    "data/corpus/docs/fastapi-handling-errors.md"
+   ],
+   "runs": {
+    "hybrid": {
+     "seconds": 0.0767,
+     "top1_score": 0.030330882352941176,
+     "entries": [
+      {
+       "chunk_id": 143,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.030330882352941176,
+       "vector_rank": 8,
+       "keyword_rank": 4,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 197,
+       "path": "data/corpus/docs/fastapi-handling-errors.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.030090497737556562,
+       "vector_rank": 5,
+       "keyword_rank": 8,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 219,
+       "path": "data/corpus/docs/fastapi-testing.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": 0.02877846790890269,
+       "vector_rank": 9,
+       "keyword_rank": 10,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 189,
+       "path": "data/corpus/docs/fastapi-handling-errors.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.02804284323271665,
+       "vector_rank": 19,
+       "keyword_rank": 5,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 191,
+       "path": "data/corpus/docs/fastapi-handling-errors.md",
+       "slot": 1,
+       "doc_ok": true,
+       "score": 0.026547116736990155,
+       "vector_rank": 12,
+       "keyword_rank": 19,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 322,
+       "path": "data/corpus/docs/pgvector-readme.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.02411038489469862,
+       "vector_rank": 21,
+       "keyword_rank": 25,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 218,
+       "path": "data/corpus/docs/fastapi-testing.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.01639344262295082,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 499,
+       "path": "data/corpus/docs/system-design-primer.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.01639344262295082,
+       "vector_rank": null,
+       "keyword_rank": 1,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 216,
+       "path": "data/corpus/docs/fastapi-settings.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": 0.016129032258064516,
+       "vector_rank": null,
+       "keyword_rank": 2,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 220,
+       "path": "data/corpus/docs/fastapi-testing.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": 0.016129032258064516,
+       "vector_rank": 2,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    },
+    "vector+rerank": {
+     "seconds": 1.2699,
+     "top1_score": -0.15606239438056946,
+     "entries": [
+      {
+       "chunk_id": 197,
+       "path": "data/corpus/docs/fastapi-handling-errors.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -0.15606239438056946,
+       "vector_rank": 5,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 219,
+       "path": "data/corpus/docs/fastapi-testing.md",
+       "slot": 0,
+       "doc_ok": true,
+       "score": -1.0987616777420044,
+       "vector_rank": 9,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 196,
+       "path": "data/corpus/docs/fastapi-handling-errors.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.3076531887054443,
+       "vector_rank": 3,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 195,
+       "path": "data/corpus/docs/fastapi-handling-errors.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.418198585510254,
+       "vector_rank": 4,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 223,
+       "path": "data/corpus/docs/fastapi-testing.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -1.5258393287658691,
+       "vector_rank": 7,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 143,
+       "path": "data/corpus/docs/fastapi-deployment-concepts.pdf",
+       "slot": null,
+       "doc_ok": false,
+       "score": -3.0339574813842773,
+       "vector_rank": 8,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 124,
+       "path": "data/corpus/docs/fastapi-bigger-applications.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -3.1616358757019043,
+       "vector_rank": 6,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 91,
+       "path": "data/corpus/docs/fastapi-behind-a-proxy.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -3.8888890743255615,
+       "vector_rank": 18,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 218,
+       "path": "data/corpus/docs/fastapi-testing.md",
+       "slot": null,
+       "doc_ok": true,
+       "score": -4.073467254638672,
+       "vector_rank": 1,
+       "keyword_rank": null,
+       "filter_ok": null
+      },
+      {
+       "chunk_id": 56,
+       "path": "data/corpus/docs/fastapi-async.md",
+       "slot": null,
+       "doc_ok": false,
+       "score": -4.12345027923584,
+       "vector_rank": 25,
+       "keyword_rank": null,
+       "filter_ok": null
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
