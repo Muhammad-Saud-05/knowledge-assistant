@@ -171,6 +171,8 @@ def answer_question_stream(
     k: int = 5,
     mode: str = "hybrid",
     filters: SearchFilters | None = None,
+    reranker=None,
+    rerank_candidates: int = 30,
 ) -> Generator[str, None, Answer]:
     """Yield the answer piece by piece; the generator's return value is the Answer.
 
@@ -182,7 +184,10 @@ def answer_question_stream(
             answer = done.value
     """
     started = time.perf_counter()
-    chunks = search(conn, embedder, question, k=k, mode=mode, filters=filters)
+    chunks = search(
+        conn, embedder, question, k=k, mode=mode, filters=filters,
+        reranker=reranker, rerank_candidates=rerank_candidates,
+    )
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:
@@ -209,10 +214,15 @@ def answer_question(
     k: int = 5,
     mode: str = "hybrid",
     filters: SearchFilters | None = None,
+    reranker=None,
+    rerank_candidates: int = 30,
 ) -> Answer:
     """Answer in one go (no streaming)."""
     started = time.perf_counter()
-    chunks = search(conn, embedder, question, k=k, mode=mode, filters=filters)
+    chunks = search(
+        conn, embedder, question, k=k, mode=mode, filters=filters,
+        reranker=reranker, rerank_candidates=rerank_candidates,
+    )
     retrieval_seconds = time.perf_counter() - started
 
     if not chunks:

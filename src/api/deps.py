@@ -31,6 +31,11 @@ def get_embedder(request: Request):
     return embedder
 
 
+def get_reranker(request: Request):
+    """The loaded reranker, or None when reranking is switched off (RERANKER_ENABLED=false)."""
+    return getattr(request.app.state, "reranker", None)
+
+
 def get_llm(request: Request):
     llm = getattr(request.app.state, "llm", None)
     if llm is None:

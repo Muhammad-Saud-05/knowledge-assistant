@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from ..db.pool import create_pool
 from ..ingestion.embedder import Embedder
 from ..llm.ollama import OllamaLLM
+from ..retrieval.defaults import load_reranker
 from . import ask, documents, health, ingest
 from .config import Settings, load_settings
 from .observability import RequestLogMiddleware, configure_logging, request_id_of
@@ -48,6 +49,19 @@ async def lifespan(app: FastAPI):
     embedder = Embedder()
     await run_in_threadpool(lambda: embedder.model)
     app.state.embedder = embedder
+
+    # The reranker is loaded here too (a few seconds). If it cannot be loaded the server does not start,
+    # and the error says how to run without it.
+    app.state.reranker = None
+    if app.state.settings.reranker_enabled:
+        try:
+            app.state.reranker = await run_in_threadpool(load_reranker)
+        except Exception:
+            await run_in_threadpool(pool.close)
+            raise
+        logger.info("reranker loaded: %s", app.state.reranker.model_name)
+    else:
+        logger.info("reranking is switched off; using plain hybrid search")
 
     llm = OllamaLLM()
     app.state.llm = llm

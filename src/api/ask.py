@@ -23,15 +23,16 @@ import time
 from collections.abc import AsyncIterator
 
 import anyio.to_thread
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from ..llm.base import LLMError
+from ..retrieval.defaults import RERANK_CANDIDATES, resolve_mode
 from ..retrieval.hybrid import search
 from ..retrieval.models import RetrievedChunk
 from ..synthesis.answer import NOT_FOUND, Answer, build_prompt, finish_answer
-from .deps import get_embedder, get_gate, get_llm, get_pool
+from .deps import get_embedder, get_gate, get_llm, get_pool, get_reranker
 from .observability import request_id_of
 from .schemas import AskRequest
 
@@ -59,6 +60,8 @@ def source_payload(number: int, chunk: RetrievedChunk) -> dict:
         "text": chunk.text,
         "vector_rank": chunk.vector_rank,
         "keyword_rank": chunk.keyword_rank,
+        "rerank_rank": chunk.rerank_rank,
+        "rerank_score": chunk.rerank_score,
     }
 
 
@@ -76,10 +79,14 @@ def done_payload(answer: Answer, queue_wait: float) -> dict:
     }
 
 
-def _retrieve(pool, embedder, body: AskRequest) -> list[RetrievedChunk]:
+def _retrieve(pool, embedder, reranker, body: AskRequest) -> list[RetrievedChunk]:
     filters = body.filters.to_search_filters() if body.filters else None
+    mode = resolve_mode(body.mode, reranker is not None)
     with pool.connection() as conn:
-        return search(conn, embedder, body.question, k=body.k, mode=body.mode, filters=filters)
+        return search(
+            conn, embedder, body.question, k=body.k, mode=mode, filters=filters,
+            reranker=reranker if mode.endswith("+rerank") else None, rerank_candidates=RERANK_CANDIDATES,
+        )
 
 
 def _next_piece(iterator):
@@ -91,7 +98,7 @@ def _next_piece(iterator):
 
 
 async def ask_event_stream(
-    body: AskRequest, pool, embedder, llm, gate, request_id: str
+    body: AskRequest, pool, embedder, llm, gate, request_id: str, reranker=None
 ) -> AsyncIterator[str]:
     queue_wait = 0.0
     if gate.locked():  # another answer is being generated: tell the client it is waiting
@@ -107,7 +114,7 @@ async def ask_event_stream(
         started = time.perf_counter()
 
         try:
-            chunks = await run_in_threadpool(_retrieve, pool, embedder, body)
+            chunks = await run_in_threadpool(_retrieve, pool, embedder, reranker, body)
         except Exception as error:  # noqa: BLE001
             logger.error("ask id=%s search failed type=%s", request_id, type(error).__name__)
             yield sse("error", {"message": SEARCH_FAILED})
@@ -174,9 +181,14 @@ async def ask(
     embedder=Depends(get_embedder),
     llm=Depends(get_llm),
     gate=Depends(get_gate),
+    reranker=Depends(get_reranker),
 ) -> StreamingResponse:
     """Answer a question from the stored documents, streamed as Server-Sent Events."""
-    stream = ask_event_stream(body, pool, embedder, llm, gate, request_id_of(request))
+    try:
+        resolve_mode(body.mode, reranker is not None)
+    except ValueError as error:  # for example the reranked mode while reranking is switched off
+        raise HTTPException(status_code=400, detail=str(error)) from None
+    stream = ask_event_stream(body, pool, embedder, llm, gate, request_id_of(request), reranker)
     return StreamingResponse(
         stream,
         media_type="text/event-stream",

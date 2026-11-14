@@ -3,6 +3,7 @@
 ALLOWED_ORIGINS  comma-separated web addresses allowed to call the API from a browser
                  (default: the Vite dev server on http://localhost:5173 and http://127.0.0.1:5173)
 MAX_UPLOAD_MB    largest file /api/ingest accepts (default 25)
+RERANKER_ENABLED true (default) to rerank search results with the cross-encoder, false for plain hybrid search
 """
 
 import os
@@ -12,6 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from ..db.connection import ENV_FILE
+from ..retrieval.defaults import parse_enabled
 
 PROJECT_ROOT = ENV_FILE.parent
 DEFAULT_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
@@ -28,6 +30,7 @@ class Settings:
     upload_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "data" / "uploads")
     # A question and its filters are tiny; anything bigger than this is refused up front.
     max_json_body_bytes: int = 64 * 1024
+    reranker_enabled: bool = True
 
 
 def parse_origins(text: str) -> tuple[str, ...]:
@@ -54,4 +57,8 @@ def load_settings() -> Settings:
             raise ValueError(f"MAX_UPLOAD_MB must be a number, got {raw!r}") from None
         if max_mb <= 0:
             raise ValueError("MAX_UPLOAD_MB must be greater than 0")
-    return Settings(allowed_origins=origins, max_upload_bytes=int(max_mb * 1024 * 1024))
+    return Settings(
+        allowed_origins=origins,
+        max_upload_bytes=int(max_mb * 1024 * 1024),
+        reranker_enabled=parse_enabled(os.environ.get("RERANKER_ENABLED")),
+    )
