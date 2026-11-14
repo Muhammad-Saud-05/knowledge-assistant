@@ -5,23 +5,29 @@
     "question": "Which header name does the FastAPI middleware example use to report how long a request took?",
     "expected": [{"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["custom header `X-Process-Time` containing the time in seconds"]}],
     "holdout": false,
+    "lexical_overlap": 0.56,
+    "difficulty": "high_overlap",
     "notes": "Answer hinges on the header name X-Process-Time."
   },
   {
     "id": "q02",
     "category": "exact_term",
-    "question": "What is the default value of max_age for CORSMiddleware?",
+    "question": "fastapi cors max_age default",
     "expected": [{"doc": "data/corpus/docs/fastapi-cors.md", "evidence": ["to cache CORS responses. Defaults to `600`"]}],
     "holdout": false,
-    "notes": "Parameter name plus a number (600)."
+    "lexical_overlap": 0.5,
+    "difficulty": "high_overlap",
+    "notes": "Parameter name plus a number (600). Written as a short keyword-style search."
   },
   {
     "id": "q03",
     "category": "exact_term",
-    "question": "Which method do I call on BackgroundTasks to queue up a function?",
+    "question": "fastapi BackgroundTasks queue function method",
     "expected": [{"doc": "data/corpus/docs/fastapi-background-tasks.md", "evidence": ["with the method `.add_task()`"]}],
     "holdout": false,
-    "notes": "Method name .add_task()."
+    "lexical_overlap": 0.6,
+    "difficulty": "high_overlap",
+    "notes": "Method name .add_task(). Written as a short keyword-style search."
   },
   {
     "id": "q04",
@@ -29,6 +35,8 @@
     "question": "What is the default keep_alive duration in the Ollama API?",
     "expected": [{"doc": "data/corpus/docs/ollama-api.md", "evidence": ["following the request (default: `5m`)"]}],
     "holdout": true,
+    "lexical_overlap": 0.5,
+    "difficulty": "high_overlap",
     "notes": "Parameter keep_alive and its default 5m."
   },
   {
@@ -37,23 +45,30 @@
     "question": "Which exception class do I override to change the validation error response in FastAPI?",
     "expected": [{"doc": "data/corpus/docs/fastapi-handling-errors.md", "evidence": ["internally raises a `RequestValidationError`"]}],
     "holdout": false,
+    "lexical_overlap": 0.62,
+    "difficulty": "high_overlap",
     "notes": "Class name RequestValidationError."
   },
   {
     "id": "q06",
     "category": "exact_term",
-    "question": "What exception does FastAPI raise when a WebSocket client disconnects?",
+    "question": "fastapi websocket client disconnect exception",
     "expected": [{"doc": "data/corpus/docs/fastapi-websockets.md", "evidence": ["will raise a `WebSocketDisconnect` exception"]}],
     "holdout": false,
-    "notes": "Class name WebSocketDisconnect."
+    "lexical_overlap": 0.8,
+    "difficulty": "high_overlap",
+    "notes": "Class name WebSocketDisconnect. Written as a short keyword-style search."
   },
   {
     "id": "q07",
     "category": "exact_term",
-    "question": "Which flag do I add to the fastapi run command when the container sits behind a TLS termination proxy?",
+    "question": "fastapi run flag behind TLS termination proxy",
     "expected": [{"doc": "data/corpus/docs/fastapi-deployment-docker.pdf", "evidence": ["add the option --proxy-headers"]}],
+    "also_acceptable": [{"doc": "data/corpus/docs/fastapi-behind-a-proxy.md", "evidence": ["By setting `--proxy-headers` now FastAPI would be able"]}],
     "holdout": false,
-    "notes": "Command-line flag --proxy-headers; the document is a PDF."
+    "lexical_overlap": 0.8,
+    "difficulty": "high_overlap",
+    "notes": "Command-line flag --proxy-headers; the document is a PDF. Written as a short keyword-style search."
   },
   {
     "id": "q08",
@@ -61,15 +76,19 @@
     "question": "What are the default m and ef_construction values for an HNSW index in pgvector?",
     "expected": [{"doc": "data/corpus/docs/pgvector-readme.pdf", "evidence": ["connections per layer (16 by default)", "for constructing the graph (64 by default)"]}],
     "holdout": true,
+    "lexical_overlap": 0.67,
+    "difficulty": "high_overlap",
     "notes": "Two parameter names and their numeric defaults (16 and 64); PDF."
   },
   {
     "id": "q09",
     "category": "exact_term",
-    "question": "What HTTP status code and header should a rate limiter send back when it rejects a request?",
+    "question": "rate limit rejected request status code header",
     "expected": [{"doc": "sample_corpus/rate-limiting-notes.md", "evidence": ["return HTTP status 429 (Too Many Requests)"]}],
     "holdout": false,
-    "notes": "Status code 429 and the Retry-After header."
+    "lexical_overlap": 0.86,
+    "difficulty": "high_overlap",
+    "notes": "Status code 429 and the Retry-After header. Written as a short keyword-style search."
   },
   {
     "id": "q10",
@@ -77,6 +96,8 @@
     "question": "Which decorator stops Pydantic Settings from re-reading the .env file on every request?",
     "expected": [{"doc": "data/corpus/docs/fastapi-settings.md", "evidence": ["Using `@lru_cache` lets you avoid reading the dotenv file"]}],
     "holdout": false,
+    "lexical_overlap": 0.71,
+    "difficulty": "high_overlap",
     "notes": "Decorator name lru_cache."
   },
   {
@@ -85,6 +106,8 @@
     "question": "Why does running more copies of my web service multiply the RAM it needs?",
     "expected": [{"doc": "data/corpus/docs/fastapi-deployment-concepts.pdf", "evidence": ["multiple processes normally don't share any memory"]}],
     "holdout": false,
+    "lexical_overlap": 0.2,
+    "difficulty": "low_overlap",
     "notes": "Easy: the question says RAM and copies; the source says memory and processes."
   },
   {
@@ -92,7 +115,10 @@
     "category": "paraphrase",
     "question": "How does the cache decide which entries to throw out when it fills up?",
     "expected": [{"doc": "data/corpus/docs/sdp-solution-query-cache.md", "evidence": ["least recently used (LRU) approach to expire older entries"]}],
+    "also_acceptable": [{"doc": "data/corpus/docs/system-design-primer.md", "evidence": ["invalidate 'cold' entries and keep 'hot' data in RAM"]}],
     "holdout": false,
+    "lexical_overlap": 0.4,
+    "difficulty": "high_overlap",
     "notes": "Easy: eviction policy asked without the term LRU."
   },
   {
@@ -101,6 +127,8 @@
     "question": "Why should I test myself instead of just rereading my notes?",
     "expected": [{"doc": "sample_corpus/study-habits-notes.md", "evidence": ["Retrieving a memory strengthens it more"]}],
     "holdout": false,
+    "lexical_overlap": 0.5,
+    "difficulty": "high_overlap",
     "notes": "Easy: active recall, asked in everyday words."
   },
   {
@@ -109,15 +137,19 @@
     "question": "What happens if I read a record immediately after writing it, when the copies of the data sync up later?",
     "expected": [{"doc": "data/corpus/docs/system-design-primer.md", "evidence": ["reads will eventually see it (typically within milliseconds)"]}],
     "holdout": true,
+    "lexical_overlap": 0.11,
+    "difficulty": "low_overlap",
     "notes": "Eventual consistency without naming it. The primer is a long document with many neighbouring passages."
   },
   {
     "id": "q15",
     "category": "paraphrase",
-    "question": "How can one machine with only one public address host many encrypted websites?",
+    "question": "How can one computer show a different proof of identity for each website it hosts?",
     "expected": [{"doc": "data/corpus/docs/fastapi-deployment-https.md", "evidence": ["to have several https certificates and serve multiple https"]}],
     "holdout": false,
-    "notes": "Hard: describes the SNI extension without any of its vocabulary."
+    "lexical_overlap": 0.14,
+    "difficulty": "low_overlap",
+    "notes": "Describes the SNI extension without any of its vocabulary."
   },
   {
     "id": "q16",
@@ -125,6 +157,8 @@
     "question": "What goes wrong when sites link back to pages that the spider already visited?",
     "expected": [{"doc": "data/corpus/docs/sdp-solution-web-crawler.pdf", "evidence": ["stuck in an infinite loop if the graph"]}],
     "holdout": false,
+    "lexical_overlap": 0.22,
+    "difficulty": "low_overlap",
     "notes": "Hard: graph cycles in a crawler, described with spider and link back."
   },
   {
@@ -133,6 +167,8 @@
     "question": "Why can't an ordinary SQL store cope with sending each new post to every follower of a celebrity?",
     "expected": [{"doc": "data/corpus/docs/sdp-solution-twitter.pdf", "evidence": ["will overload a traditional relational database"]}],
     "holdout": false,
+    "lexical_overlap": 0.14,
+    "difficulty": "low_overlap",
     "notes": "Hard: fan-out problem without the words tweet, fanout or relational."
   },
   {
@@ -141,6 +177,8 @@
     "question": "How would you find the quickest chain of friends between two people on a small network?",
     "expected": [{"doc": "data/corpus/docs/sdp-solution-social-graph.md", "evidence": ["unweighted shortest path task with a general BFS approach"]}],
     "holdout": true,
+    "lexical_overlap": 0.0,
+    "difficulty": "low_overlap",
     "notes": "Hard: shortest path by breadth-first search, asked as a story."
   },
   {
@@ -149,6 +187,8 @@
     "question": "How does the design pick a unique short identifier for each saved snippet?",
     "expected": [{"doc": "data/corpus/docs/sdp-solution-pastebin.md", "evidence": ["hash of the user's ip_address + timestamp"]}],
     "holdout": false,
+    "lexical_overlap": 0.29,
+    "difficulty": "high_overlap",
     "notes": "Hard: URL generation via an MD5 hash, asked without hash or url."
   },
   {
@@ -156,7 +196,10 @@
     "category": "paraphrase",
     "question": "Which option tells the framework which upstream machines may be believed about the original request scheme?",
     "expected": [{"doc": "data/corpus/docs/fastapi-behind-a-proxy.md", "evidence": ["pass the IP addresses that should be trusted"]}],
+    "also_acceptable": [{"doc": "data/corpus/docs/fastapi-deployment-https.md", "evidence": ["from which IPs it should trust those forwarded headers"]}],
     "holdout": false,
+    "lexical_overlap": 0.22,
+    "difficulty": "low_overlap",
     "notes": "Hard: forwarded-allow-ips described abstractly."
   },
   {
@@ -164,7 +207,10 @@
     "category": "paraphrase",
     "question": "How do I keep my passwords from ending up in the repository?",
     "expected": [{"doc": "sample_corpus/git-workflow-cheatsheet.md", "evidence": ["Add them to `.gitignore` before the first commit"]}],
+    "also_acceptable": [{"doc": "sample_corpus/rag-beginners-guide.pdf", "evidence": ["belong in environment files that are excluded from version control"]}],
     "holdout": false,
+    "lexical_overlap": 0.5,
+    "difficulty": "high_overlap",
     "notes": "Easy: everyday wording."
   },
   {
@@ -173,40 +219,48 @@
     "question": "Why repeat some words at the start of each new piece when splitting a document?",
     "expected": [{"doc": "sample_corpus/rag-beginners-guide.pdf", "evidence": ["an idea that falls across a boundary"]}],
     "holdout": true,
+    "lexical_overlap": 0.33,
+    "difficulty": "high_overlap",
     "notes": "Chunk overlap, asked without the words chunk or overlap."
   },
   {
     "id": "q23",
     "category": "multi_doc",
-    "question": "How do I run a FastAPI container behind a proxy that handles HTTPS?",
+    "question": "How do I run a FastAPI container behind a proxy that handles HTTPS, and how can that proxy serve several different domains from a single IP address?",
     "expected": [
       {"doc": "data/corpus/docs/fastapi-deployment-docker.pdf", "evidence": ["add the option --proxy-headers"]},
-      {"doc": "data/corpus/docs/fastapi-deployment-https.md", "evidence": ["options you could use as a TLS Termination Proxy"]}
+      {"doc": "data/corpus/docs/fastapi-deployment-https.md", "evidence": ["to have several https certificates and serve multiple https"]}
     ],
     "holdout": false,
-    "notes": "Container advice (Docker PDF) plus what a TLS termination proxy is (HTTPS document)."
+    "lexical_overlap": 0.54,
+    "difficulty": "high_overlap",
+    "notes": "Docker PDF: the container flag. HTTPS page: serving several domains from one IP (SNI), which the Docker PDF does not cover. Rewritten because the Docker PDF alone answered the first version."
   },
   {
     "id": "q24",
     "category": "multi_doc",
-    "question": "How can I test a FastAPI app whose settings come from environment variables?",
+    "question": "How can I run my tests with a different admin email setting, and what do I need to install to use the test client?",
     "expected": [
-      {"doc": "data/corpus/docs/fastapi-testing.md", "evidence": ["Create a `TestClient` by passing your **FastAPI** application to it"]},
+      {"doc": "data/corpus/docs/fastapi-testing.md", "evidence": ["To use `TestClient`, first install"]},
       {"doc": "data/corpus/docs/fastapi-settings.md", "evidence": ["very easy to provide a different settings object during testing"]}
     ],
     "holdout": false,
-    "notes": "TestClient (testing) plus dependency override of the settings (settings)."
+    "lexical_overlap": 0.39,
+    "difficulty": "high_overlap",
+    "notes": "Testing page: what to install for the test client. Settings page: overriding the settings in tests. Rewritten because the settings page alone answered the first version."
   },
   {
     "id": "q25",
     "category": "multi_doc",
-    "question": "How can a browser-based frontend read a custom response header that my middleware adds?",
+    "question": "How do I add a processing-time header to every response and let a frontend served from http://localhost:8080 read it?",
     "expected": [
-      {"doc": "data/corpus/docs/fastapi-cors.md", "evidence": ["response headers that should be made accessible to the browser"]},
-      {"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["client in a browser to be able to see"]}
+      {"doc": "data/corpus/docs/fastapi-cors.md", "evidence": ["the list would have to include `http://localhost:8080`"]},
+      {"doc": "data/corpus/docs/fastapi-middleware.md", "evidence": ["custom header `X-Process-Time` containing the time in seconds"]}
     ],
     "holdout": false,
-    "notes": "Both documents mention expose_headers, from different angles."
+    "lexical_overlap": 0.33,
+    "difficulty": "high_overlap",
+    "notes": "Middleware page: how to add the header. CORS page: allowing that origin. Rewritten because the middleware tip about expose_headers alone answered the first version."
   },
   {
     "id": "q26",
@@ -217,6 +271,8 @@
       {"doc": "data/corpus/docs/fastapi-background-tasks.md", "evidence": ["define background tasks to be run after returning a response"]}
     ],
     "holdout": true,
+    "lexical_overlap": 0.58,
+    "difficulty": "high_overlap",
     "notes": "Order of execution spans the middleware note and the background tasks page."
   },
   {
@@ -228,6 +284,8 @@
       {"doc": "data/corpus/docs/fastapi-deployment-docker.pdf", "evidence": ["use the --workers command line option to set the number"]}
     ],
     "holdout": false,
+    "lexical_overlap": 0.58,
+    "difficulty": "high_overlap",
     "notes": "Memory per process (concepts) plus the --workers flag (Docker)."
   },
   {
@@ -239,6 +297,8 @@
       {"doc": "data/corpus/docs/sdp-solution-query-cache.md", "evidence": ["across all machines in the cache cluster"]}
     ],
     "holdout": false,
+    "lexical_overlap": 0.45,
+    "difficulty": "high_overlap",
     "notes": "Two solutions that both shard, in different words."
   },
   {
@@ -250,6 +310,8 @@
       {"doc": "data/corpus/docs/ollama-api.md", "evidence": ["POST /api/generate"]}
     ],
     "holdout": false,
+    "lexical_overlap": 0.25,
+    "difficulty": "low_overlap",
     "notes": "Build requirements (development) plus the endpoint (API)."
   },
   {
@@ -261,6 +323,8 @@
       {"doc": "data/corpus/docs/pgvector-readme.pdf", "evidence": ["For cosine similarity, use 1 - cosine distance"]}
     ],
     "holdout": true,
+    "lexical_overlap": 0.44,
+    "difficulty": "high_overlap",
     "notes": "Hybrid retrieval idea (guide) plus the SQL for similarity (pgvector)."
   },
   {
@@ -298,18 +362,18 @@
   {
     "id": "q35",
     "category": "unanswerable",
-    "question": "Who won the 2018 FIFA World Cup final?",
+    "question": "How do I accept file uploads in a FastAPI endpoint?",
     "expected": [],
     "holdout": false,
-    "notes": "Off-topic."
+    "notes": "In-domain but absent: no text search hit for UploadFile or multipart; the only 'upload' hits are about uploading models to Ollama's library and a photo-service example."
   },
   {
     "id": "q36",
     "category": "unanswerable",
-    "question": "How many calories are in a slice of pepperoni pizza?",
+    "question": "How do I paginate nearest-neighbour results in pgvector?",
     "expected": [],
     "holdout": false,
-    "notes": "Off-topic."
+    "notes": "In-domain but absent: no hit for pagination, OFFSET or paging anywhere in the corpus."
   },
   {
     "id": "q37",
@@ -317,8 +381,11 @@
     "question": "Which tools can renew HTTPS certificates automatically when acting as a TLS termination proxy?",
     "filters": {"source_types": ["pdf"]},
     "expected": [{"doc": "data/corpus/docs/fastapi-deployment-concepts.pdf", "evidence": ["Automatically handles certificate renewals"]}],
+    "headline": false,
     "holdout": false,
-    "notes": "File-type filter: pdf. The HTTPS markdown page also mentions renewals, so the filter matters."
+    "lexical_overlap": 0.62,
+    "difficulty": "high_overlap",
+    "notes": "File-type filter: pdf. The HTTPS markdown page also mentions renewals, so the filter matters. The HTTPS markdown page also covers renewals but is excluded by the filter, so it is not listed as an alternative."
   },
   {
     "id": "q38",
@@ -326,7 +393,10 @@
     "question": "In what unit is the load_duration value reported in an Ollama response?",
     "filters": {"path_prefix": "data/corpus/docs/ollama-"},
     "expected": [{"doc": "data/corpus/docs/ollama-api.md", "evidence": ["time spent in nanoseconds loading the model"]}],
+    "headline": false,
     "holdout": false,
+    "lexical_overlap": 0.33,
+    "difficulty": "high_overlap",
     "notes": "Path-prefix filter: the three Ollama documents."
   },
   {
@@ -335,16 +405,22 @@
     "question": "How does the sliding window counter approximate a true sliding window?",
     "filters": {"date_to": "2026-09-30"},
     "expected": [{"doc": "sample_corpus/rate-limiting-notes.md", "evidence": ["approximates a sliding window using only two counters"]}],
+    "headline": false,
     "holdout": false,
-    "notes": "Date filter: only the rate limiting notes (front-matter date 2026-09-14) are dated on or before 2026-09-30."
+    "lexical_overlap": 0.4,
+    "difficulty": "high_overlap",
+    "notes": "Date filter: only the rate limiting notes (front-matter date 2026-09-14) are dated on or before 2026-09-30. Dates: the author's own notes carry front-matter dates; the third-party documents carry their file's modified date (2026-11-14)."
   },
   {
     "id": "q40",
     "category": "filtered",
-    "question": "How do I undo my last commit but keep the changes?",
+    "question": "Which git command rewinds history by one commit but leaves my edits staged?",
     "filters": {"date_from": "2026-10-01", "date_to": "2026-10-31"},
     "expected": [{"doc": "sample_corpus/git-workflow-cheatsheet.md", "evidence": ["git reset --soft HEAD~1"]}],
+    "headline": false,
     "holdout": true,
-    "notes": "Date-range filter: only the git cheatsheet (front-matter date 2026-10-02) falls in October 2026."
+    "lexical_overlap": 0.29,
+    "difficulty": "high_overlap",
+    "notes": "Date-range filter: only the git cheatsheet (front-matter date 2026-10-02) falls in October 2026. Dates: the author's own notes carry front-matter dates; the third-party documents carry their file's modified date (2026-11-14). Rewritten from a generic wording whose words all appeared in this tiny document."
   }
 ]
