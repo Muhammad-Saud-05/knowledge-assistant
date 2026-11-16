@@ -13,6 +13,14 @@ TEST_DB = "kb_test"
 INIT_SQL = Path(__file__).resolve().parents[1] / "db" / "init.sql"
 
 
+def pytest_collection_modifyitems(items):
+    """Every test that needs a downloaded model (slow) or a running Ollama (integration) also gets the
+    `external` marker, so one selection, -m "not external", skips all of them (this is what CI runs)."""
+    for item in items:
+        if "slow" in item.keywords or "integration" in item.keywords:
+            item.add_marker(pytest.mark.external)
+
+
 # ------------------------------------------------------------ test database
 
 
