@@ -1,3 +1,5 @@
+# `docker compose up -d` starts only the database, as before.
+# `docker compose --profile app up -d --build` also starts the API and the web app (see the README).
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -13,5 +15,48 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    depends_on:
+      - db
+    # The database login comes from your .env at run time; nothing secret is in the image.
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      # Ollama stays on this computer. If it cannot be reached from the container, start it with
+      # OLLAMA_HOST=0.0.0.0 (see the README).
+      OLLAMA_HOST: http://host.docker.internal:11434
+      # The web container is served on port 8080.
+      ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # needed on Linux; Docker Desktop already provides the name
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - hf-cache:/cache/huggingface  # the embedding and reranker models, downloaded once
+      - ./data:/app/data  # your documents and uploads, the same folder the non-Docker setup uses
+      - ./sample_corpus:/app/sample_corpus:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5)"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 300s  # the first start downloads the models
+
+  web:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:8080:80"
+
 volumes:
   pgdata:
+  hf-cache:
