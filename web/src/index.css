@@ -439,3 +439,107 @@ button.stop {
   color: var(--warning-text, inherit);
   font-size: 0.8rem;
 }
+
+/* ---------- views and the Documents page ---------- */
+
+.chat-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-view[hidden] {
+  display: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tab {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab[aria-current='page'] {
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.documents-view {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.documents-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.documents-toolbar h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.documents-table {
+  width: 100%;
+  margin-top: 1rem;
+  border-collapse: collapse;
+}
+
+.documents-table th,
+.documents-table td {
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.doc-title {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.doc-file {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  overflow-wrap: anywhere;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.confirm p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.empty-documents {
+  margin-top: 1.5rem;
+  text-align: center;
+  opacity: 0.8;
+}
+
+button.danger {
+  border-color: var(--danger, #b42318);
+  background: var(--danger, #b42318);
+  color: #fff;
+}

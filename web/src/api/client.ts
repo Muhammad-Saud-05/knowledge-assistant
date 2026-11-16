@@ -3,7 +3,7 @@
 
 import { dispatchSseEvent } from './events'
 import { SseParser } from './sse'
-import type { AskHandlers, AskRequest, DeleteResult, DocumentItem, Health, IngestResult } from './types'
+import type { AskHandlers, AskRequest, DocumentItem, Health, IngestResult } from './types'
 
 export const NETWORK_MESSAGE =
   "I couldn't reach the server. Is it running? Start it with: uvicorn src.api.main:app --host 127.0.0.1 --port 8000"
@@ -70,8 +70,16 @@ export function ingestFile(file: File, signal?: AbortSignal): Promise<IngestResu
   return requestJson<IngestResult>('/api/ingest', { method: 'POST', body: form, signal })
 }
 
-export function deleteDocument(id: number, signal?: AbortSignal): Promise<DeleteResult> {
-  return requestJson<DeleteResult>(`/api/documents/${id}`, { method: 'DELETE', signal })
+/** Delete a document and its chunks. The server answers 204 with no body, 404 if it is already gone. */
+export async function deleteDocument(id: number, signal?: AbortSignal): Promise<void> {
+  let response: Response
+  try {
+    response = await fetch(`/api/documents/${id}`, { method: 'DELETE', signal })
+  } catch (error) {
+    if (isAbort(error)) throw error
+    throw new ApiError(NETWORK_MESSAGE)
+  }
+  if (!response.ok) throw await errorFromResponse(response)
 }
 
 /**

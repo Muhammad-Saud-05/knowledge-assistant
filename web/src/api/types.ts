@@ -91,11 +91,11 @@ export interface Health {
 export interface DocumentItem {
   id: number
   title: string | null
-  path: string
   source_type: SourceType
+  display_name: string // the file name only, never a path
   doc_date: string | null
   ingested_at: string
-  chunks: number
+  chunk_count: number
 }
 
 export interface IngestResult {
@@ -106,7 +106,3 @@ export interface IngestResult {
   error: string | null
 }
 
-export interface DeleteResult {
-  deleted: boolean
-  file_removed: boolean
-}

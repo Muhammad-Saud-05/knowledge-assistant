@@ -1,7 +1,8 @@
-import { useEffect, useReducer, useRef } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { ApiError, askQuestion } from './api/client'
 import { chatReducer, isActive } from './chat'
 import Composer from './components/Composer'
+import DocumentsPage from './components/DocumentsPage'
 import StatusBadge from './components/StatusBadge'
 import TurnView from './components/TurnView'
 
@@ -13,6 +14,7 @@ export default function App() {
   const nextId = useRef(1)
   const endRef = useRef<HTMLDivElement>(null)
   const busy = turns.some(isActive)
+  const [view, setView] = useState<'chat' | 'documents'>('chat')
 
   // Keep the newest words in view as the answer grows.
   useEffect(() => {
@@ -69,9 +71,30 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>Knowledge Assistant</h1>
+        <nav className="tabs" aria-label="Views">
+          <button type="button" className="tab" aria-current={view === 'chat' ? 'page' : undefined} onClick={() => setView('chat')}>
+            Chat
+          </button>
+          <button
+            type="button"
+            className="tab"
+            aria-current={view === 'documents' ? 'page' : undefined}
+            onClick={() => setView('documents')}
+          >
+            Documents
+          </button>
+        </nav>
         <StatusBadge />
       </header>
 
+      {view === 'documents' && (
+        <main className="documents-view">
+          <DocumentsPage />
+        </main>
+      )}
+
+      {/* The chat stays mounted (just hidden) while the Documents view is open, so nothing is lost. */}
+      <div className="chat-view" hidden={view !== 'chat'}>
       <main className="conversation">
         {turns.length === 0 ? (
           <div className="empty">
@@ -88,6 +111,7 @@ export default function App() {
       </main>
 
       <Composer busy={busy} onSend={send} onStop={stop} />
+      </div>
     </div>
   )
 }
