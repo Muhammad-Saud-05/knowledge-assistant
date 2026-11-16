@@ -1,29 +1,99 @@
 # Knowledge Assistant
 
-A personal AI knowledge assistant that lets me chat with my own notes, PDFs, and learning materials. It uses retrieval-augmented generation (RAG): relevant passages are found in my documents and a local language model answers using them, with citations. Everything runs locally for privacy.
+[![CI](https://github.com/Muhammad-Saud-05/knowledge-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/Muhammad-Saud-05/knowledge-assistant/actions/workflows/ci.yml)
+
+A personal assistant that answers questions from my own notes, PDFs and learning materials. It uses retrieval-augmented generation (RAG): passages that match the question are found in the documents, and a small language model that runs on this computer writes an answer from them, with numbered citations. Documents, questions and answers stay on this machine.
+
+<!-- demo GIF goes here -->
+
+See [docs/project-brief.md](docs/project-brief.md) for the goals and scope, and [docs/eval_report.md](docs/eval_report.md) for how it was measured.
+
+## Features
+
+- **Ingestion** of `.pdf` and `.md` files: parsed into sections, cut into chunks that keep their heading and page, embedded (`BAAI/bge-small-en-v1.5`) and stored in PostgreSQL with pgvector. Re-ingesting an unchanged file is a no-op.
+- **Search** by meaning (vector), by words (PostgreSQL full-text) or both fused (reciprocal rank fusion), with filters on file type, date and path. The default search is the 30 nearest chunks by vector, reordered by a cross-encoder reranker.
+- **Cited answers** from `llama3.2:3b` through Ollama, streamed to the page. Each answer is checked: refusals are recognised, and answers that cite no source, or cite a number that matches no source, get a visible badge.
+- **A web app**: chat with the sources shown as soon as they are found, and a Documents page to list, upload and delete documents.
+- **Command-line tools** for ingesting, searching, asking, and inspecting how a file is chunked.
+- **An evaluation set and runner** with a pre-registered decision rule for each experiment, a locked holdout split, and an answer-level check ([docs/eval_report.md](docs/eval_report.md)).
+- **Optional**: splitting a question that asks several things into sub-questions (slower; off by default).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph ingest["Ingestion (once per document)"]
+    F["PDF / Markdown files"] --> P["Parse and chunk"] --> E["Embed with bge-small-en-v1.5"] --> DB[("PostgreSQL + pgvector")]
+  end
+  subgraph ask["Asking a question"]
+    Q["Question in the web app"] --> V["Vector search: 30 nearest chunks"] --> R["Rerank with a cross-encoder"] --> PR["Prompt with the top 5 sources"] --> O["Ollama: llama3.2:3b on this computer"] --> S["Answer streamed as server-sent events"] --> UI["Web app: answer, sources, citation checks"]
+  end
+  DB --> V
+```
 
 ## Quick start
 
-1. Copy the example environment file:
+Both ways need [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for PostgreSQL) and [Ollama](https://ollama.com) with the model: `ollama pull llama3.2:3b`. Copy the settings file first and put a strong `POSTGRES_PASSWORD` in it:
 
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+```powershell
+Copy-Item .env.example .env
+```
 
-2. Open `.env` and replace `change-me` with a strong `POSTGRES_PASSWORD`.
-3. Start the database:
+### Option 1: run the parts yourself (what the rest of this README describes)
 
-   ```powershell
-   docker compose up -d
-   ```
+```powershell
+docker compose up -d                  # the database only, on 127.0.0.1:5433
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m src.ingestion.ingest sample_corpus      # a few sample notes; use your own folder too
+uvicorn src.api.main:app --host 127.0.0.1 --port 8000
+```
 
-The database listens on `127.0.0.1:5433` (localhost only).
+In a second terminal: `cd web`, `npm install`, `npm run dev`, then open <http://localhost:5173>. The first start downloads two small models from Hugging Face (about 130 MB and 91 MB).
 
-See [docs/project-brief.md](docs/project-brief.md) for goals and scope.
+### Option 2: Docker for everything except Ollama
 
-## Ingestion (work in progress)
+```powershell
+docker compose --profile app up -d --build        # database, API and web app
+docker compose run --rm api python -m src.ingestion.ingest sample_corpus   # ingestion is a separate one-off command
+```
 
-Documents (`.pdf`, `.md`) are parsed into sections and cut into chunks that keep their heading and page number for citations, then embedded and stored in the database. Searching and answering are not built yet.
+Open <http://localhost:8080>. Plain `docker compose up -d` still starts only the database. Details, and what is and is not verified, are in [Running in Docker](#running-in-docker).
+
+## How it was evaluated
+
+A set of 55 questions about a 30-document corpus (the questions and their evidence phrases are in `eval/questions.json`) was split into a **development** set, used to compare and choose configurations, and a **holdout** set, run **once**. Each experiment's configurations and decision rule were written down in [docs/eval_report.md](docs/eval_report.md) before it was run. A retrieved passage counts as relevant only if it comes from the right document and contains a labelled evidence phrase.
+
+| Set | Questions in the table | Configuration | hit@1 | hit@5 | MRR@10 |
+| --- | --- | --- | --- | --- | --- |
+| Development | 30 | hybrid search (baseline) | 6/30 | 18/30 (60.0%) | 0.483 |
+| Development | 30 | vector search + reranker (the default) | 12/30 | 21/30 (70.0%) | 0.693 |
+| Holdout (run once) | 9 | hybrid search (baseline) | 2/9 | 4/9 (44.4%) | 0.497 |
+| Holdout (run once) | 9 | vector search + reranker (the default) | 2/9 | 6/9 (66.7%) | 0.578 |
+
+hit@5 means a relevant passage is among the first five results; MRR@10 rewards ranking it higher. On the development set the reranker raised MRR@10 clearly (paired difference +0.209, 95% interval 0.07 to 0.35) and hit@5 not clearly. On the holdout the direction is the same, but with 9 questions no difference is clear and hit@1 did not change. The report also covers the other configurations that were tried, the answer-level check and the suspected label issues. Answer correctness has not been measured automatically; hand grading of a sample is still to be done.
+
+## Limitations
+
+- **The model is small and runs on a CPU.** With `llama3.2:3b` on this machine, a new question typically takes 30 to 40 seconds to show its first word (the median in the answer-level check was 42.5 s), because the model must read all the sources first.
+- **It rarely refuses when it should.** On the 9 development questions that the documents cannot answer, the model refused only 3; 6 were answered anyway, 2 of them with citations. No score cut-off separated answerable from unanswerable questions.
+- **Citations are not always present.** 6 of 30 answers to answerable development questions cited no source, which is why such answers get the "Unverified: this answer cites no source" badge. A citation also shows only that a source was named, not that it supports the sentence.
+- **The evaluation is small.** 30 development questions in the main table and 9 in the holdout, written by the author for this corpus, with several questions sharing passages. Intervals are wide and most differences between configurations are not clear. The holdout was run once and is spent, so it cannot be used again to choose between configurations.
+- **Slower options are off by default.** Splitting a question into sub-questions added about 10 seconds per question and lowered ranking quality on some questions, so it is opt-in.
+- **One user, one machine.** There is no login; do not expose the server to a network.
+
+## Privacy and security
+
+- **Local only.** The database, the API, the web app and the language model all run on this computer, and the servers listen on `127.0.0.1`. Documents, questions and answers are not sent anywhere. The only network use is the one-time download of the embedding and reranker models from Hugging Face (and of Ollama's model); after that everything can run offline.
+- **Other websites cannot change anything.** Requests that change data (ask, upload, delete) are refused with 403 when their `Origin` header is not on the allowed list; CORS allows exact origins and never a wildcard; only the host names `localhost` and `127.0.0.1` are accepted.
+- **Uploads are sanitised.** Only `.pdf` and `.md` files, with a size limit; names are checked (no folders, traversal, hidden or reserved names); files are saved only under `data/uploads/`, and deleting a document never deletes a file outside that folder.
+- **Logs have no content.** They hold request ids, status codes, timings, counts and file names, never questions, answers, document text or database settings.
+- **Prompt injection is mitigated, not solved.** Sources are marked as data in the prompt, but a small model can still be fooled by text inside a document. Keep untrusted documents out of the collection.
+
+## Ingestion
+
+Documents (`.pdf`, `.md`) are parsed into sections and cut into chunks that keep their heading and page number for citations, then embedded and stored in the database.
 
 Set up Python once:
 
@@ -77,6 +147,7 @@ $env:HF_HUB_OFFLINE = "1"
 python -m pytest                 # everything
 python -m pytest -m "not slow"   # skip the test that loads the real embedding model
 python -m pytest -m "not slow and not integration"   # fast tests only (no model, no Ollama)
+python -m pytest -m "not external"   # the same selection as CI: `external` marks every test that needs Ollama or a downloaded model
 ```
 
 The database tests create a temporary `kb_test` database on the same server and drop it afterwards, so your real data is never touched. If Postgres is not running they are skipped. The one `integration` test talks to a real Ollama server and is skipped if Ollama is not running.
@@ -256,6 +327,8 @@ The server decides whether an answer is a refusal: one shared check treats an an
 
 For answers that are not refusals, a small badge appears under the answer when something cannot be checked: **"Unverified: this answer cites no source"** when no `[n]` points at one of the sources, and **"Some citation numbers don't match a source"** when it cites `[0]`, a number larger than the number of sources, or a bracket that is not a number (such as `[a]`). The answer text and the sources always stay visible. In the answer-level check of 39 development questions, 6 of 30 answers to answerable questions had no citation at all, and the model refused only 3 of 9 unanswerable questions (`docs/eval_report.md`, "Answer-level check"), so treat an answer without a source as a lead, not a fact.
 
+**Windows note:** run `npm test` (vitest) from a path with an upper-case drive letter, such as `C:\Users\...\web`. From a shell whose path starts with a lower-case `c:\`, every test file can fail with "Vitest failed to find the runner".
+
 Front-end checks (run in `web/`): `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`. (A bare `npx tsc --noEmit` checks nothing with this project layout; use `npm run typecheck`.)
 
 ### Endpoints
@@ -302,3 +375,35 @@ This is a single-user app on your own machine, so there is deliberately **no log
 - **Errors reveal little.** Error messages never include server paths or file content.
 - **Logs hold no content.** The log has request ids, methods, paths, status codes, timings and the ids of the chunks used. It never contains a question, an answer, document text, upload contents or credentials.
 - **Answers are rendered safely.** The page shows answers with a Markdown renderer that does not run raw HTML (a `<script>` or `<img onerror>` in an answer appears as plain text), blocks images, and never uses `dangerouslySetInnerHTML`. As noted above, the model's resistance to instructions hidden in documents is a mitigation, not a guarantee.
+
+## Running in Docker
+
+`docker-compose.yml` has an `app` profile that adds the API and the web app. The default is unchanged: `docker compose up -d` starts the database only.
+
+```powershell
+docker compose --profile app up -d --build     # database, API (127.0.0.1:8000) and web app (127.0.0.1:8080)
+docker compose run --rm api python -m src.ingestion.ingest sample_corpus   # ingestion is a separate one-off command
+docker compose --profile app stop api web      # stop them; the database keeps running
+```
+
+- **Ollama stays on this computer.** The API container reaches it at `host.docker.internal:11434`. On Windows with Docker Desktop this worked without changing Ollama's settings; if the container cannot reach it on your setup, start Ollama listening on all interfaces (`OLLAMA_HOST=0.0.0.0`) and check your firewall.
+- **Settings come from your `.env` when the container starts** (`env_file`); `.env` is excluded from the image, so no password is baked into anything. The database host is set to the `db` service.
+- **Models are cached in a named volume** (`hf-cache`), so they download once: the first start took about two minutes here, later starts reuse them. Your documents and uploads use the same `./data` folder as the non-Docker setup (mounted into the container), and `sample_corpus/` is mounted read-only.
+- **Ports are published on `127.0.0.1` only.** The web container serves the page and forwards `/api` to the API container. Do not use `docker compose down -v`: it deletes the database volume.
+
+Verified on this machine (Windows, Docker Desktop): the images build; both containers start; the API's health endpoint answers with the database (30 documents) and Ollama reachable; the page is served on port 8080; `/api/health` and `/api/documents` work through the web container; a `POST` and a `DELETE` with a foreign `Origin` get 403; a question streams its `sources` event through the proxy; the ingestion command runs in a one-off container (as a dry run). **Not verified:** using the page in a browser from the containers, uploading through the page in the containers, a real (non-dry) ingestion run in a container, Linux hosts (`host.docker.internal` is mapped for them but untested), and the GitHub Actions workflow itself (`.github/workflows/ci.yml` was checked locally only: its YAML parses and `python -m pytest -m "not external"` passes with model downloads and Ollama blocked; it has not yet run on GitHub).
+
+## Licences and attribution
+
+The code in this repository is under the [MIT licence](LICENSE).
+
+**The evaluation corpus is third-party material, and the files themselves are not in this repository** (`data/` is git-ignored). Only [docs/corpus_manifest.csv](docs/corpus_manifest.csv) is committed. For each of the 26 files it records where the file came from (repository, upstream path and commit), its licence and its copyright holder. Summarised from the manifest:
+
+| Source | Files | Licence | Copyright holder (as in the manifest) |
+| --- | --- | --- | --- |
+| [FastAPI documentation](https://github.com/fastapi/fastapi) | 13 | MIT | Sebastian Ramirez |
+| [System Design Primer](https://github.com/donnemartin/system-design-primer) | 9 | CC BY 4.0 | Donne Martin |
+| [Ollama documentation](https://github.com/ollama/ollama) | 3 | MIT | Ollama |
+| [pgvector README](https://github.com/pgvector/pgvector) | 1 | PostgreSQL License | PostgreSQL Global Development Group; Regents of the University of California (per its LICENSE file) |
+
+The files are copies, some converted from the upstream format (see the `notes` column of the manifest). The four original sample files in `sample_corpus/` are not in the manifest; they are the project's own and are covered by the MIT licence above. Third-party libraries (see `requirements.txt` and `web/package.json`) and the downloaded models (`BAAI/bge-small-en-v1.5`, `cross-encoder/ms-marco-MiniLM-L-6-v2`, and the Ollama model `llama3.2:3b`) keep their own licences; check each model's page before redistributing anything.
