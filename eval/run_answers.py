@@ -19,7 +19,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from src.synthesis.answer import NOT_FOUND, Answer, parse_citations
+from src.synthesis.answer import NOT_FOUND, Answer, parse_citations, validate_answer
 
 from .metrics import median, percentile
 from .questions import QUESTIONS_FILE, Question, load_questions, select_set, select_split
@@ -205,6 +205,67 @@ def render_summary(s: dict) -> str:
     return "\n".join(lines + [""] + timing + extra) + "\n"
 
 
+# ------------------------------------------------------------------ recompute
+
+
+def recompute(records: list[dict]) -> dict:
+    """Re-judge SAVED answers with the current refusal and citation checks (nothing is regenerated).
+
+    The old figures use the fields saved when the answers were made (exact not-found sentence; any cited
+    number counted as a citation). The new ones run the current validate_answer on the saved text and the
+    saved number of sources.
+    """
+    rows = []
+    for r in records:
+        new = validate_answer(r["answer"], r["sources_provided"])
+        rows.append(
+            {
+                "id": r["id"],
+                "answerable": r["answerable"],
+                "old_refused": r["exact_not_found"],
+                "new_refused": new.refused,
+                "old_uncited": not r["exact_not_found"] and not r["has_citation"],
+                "new_uncited": new.uncited,
+                "old_invalid": bool(r["invalid_numbers"]),
+                "new_invalid": bool(new.invalid_citations),
+            }
+        )
+    un = [x for x in rows if not x["answerable"]]
+    an = [x for x in rows if x["answerable"]]
+
+    def count(group, key):
+        return sum(1 for x in group if x[key])
+
+    return {
+        "n_unanswerable": len(un),
+        "n_answerable": len(an),
+        "correctly_refused": (count(un, "old_refused"), count(un, "new_refused")),
+        "wrongly_refused": (count(an, "old_refused"), count(an, "new_refused")),
+        "uncited_answerable": (count(an, "old_uncited"), count(an, "new_uncited")),
+        "uncited_unanswerable": (count(un, "old_uncited"), count(un, "new_uncited")),
+        "invalid_answers": (count(rows, "old_invalid"), count(rows, "new_invalid")),
+        "n": len(rows),
+        "changed_refusal": sorted(x["id"] for x in rows if x["old_refused"] != x["new_refused"]),
+    }
+
+
+def render_recompute(s: dict) -> str:
+    def row(label, pair, n):
+        return f"| {label} | {_share(pair[0], n)} | {_share(pair[1], n)} |"
+
+    lines = [
+        "| measure | old (exact sentence; any number counts as a citation) | new (shared refusal check; valid citations only) |",
+        "|---|---|---|",
+        row("Unanswerable questions correctly refused", s["correctly_refused"], s["n_unanswerable"]),
+        row("Answerable questions wrongly refused", s["wrongly_refused"], s["n_answerable"]),
+        row("Answerable questions: answer not a refusal and cites no source", s["uncited_answerable"], s["n_answerable"]),
+        row("Unanswerable questions: answer not a refusal and cites no source", s["uncited_unanswerable"], s["n_unanswerable"]),
+        row("Answers with at least one invalid citation, all questions", s["invalid_answers"], s["n"]),
+    ]
+    changed = ", ".join(s["changed_refusal"]) or "none"
+    return "\n".join(lines) + f"\n\nQuestions whose refusal status changed: {changed}\n"
+
+
 # ------------------------------------------------------------------ to_grade
 
 
@@ -281,11 +342,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=ANSWERS_DIR, help="folder for answers (git-ignored)")
     parser.add_argument("--questions", type=Path, default=QUESTIONS_FILE)
     parser.add_argument("--summary-only", action="store_true", help="do not run anything; rebuild the summary and to_grade.md")
+    parser.add_argument("--recompute", action="store_true", help="re-judge the saved answers with the current checks and print old against new (nothing is run)")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     questions = select_questions(load_questions(args.questions))
+    if args.recompute:
+        wanted = {q.id for q in questions}
+        saved = [r for i, r in load_records(args.out / ANSWERS_FILE).items() if i in wanted]
+        if not saved:
+            print("No saved answers to recompute.", file=sys.stderr)
+            return 1
+        print(render_recompute(recompute(saved)))
+        return 0
     if not args.summary_only:
         answer_fn, mode, model = build_pipeline()
         args.out.mkdir(parents=True, exist_ok=True)

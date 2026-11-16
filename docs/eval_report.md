@@ -1515,6 +1515,32 @@ question that was answered instead of refused (6), written to `eval/answers/to_g
 with its sources and a blank grade line). Nothing was graded by the assistant, and the figures above come
 only from mechanical checks.
 
+### Note, 2026-11-16: the same answers re-judged with the shared refusal and citation checks
+
+Post-processing only: no prompt change and **no answers were regenerated**. The saved answers of the check
+above were re-judged with the application's current checks (`python -m eval.run_answers --recompute`):
+
+- **Refusal:** an answer is a refusal when the not-found sentence, compared ignoring case, spacing, quotes and
+  curly or straight apostrophes, either starts the answer (after at most three lead-in words, such as
+  "Unfortunately,") or is in the last sentence. A mention in the middle of otherwise normal content is not a
+  refusal. The same function now serves the API, which sends `refused` to the page.
+- **Citations:** valid numbers are 1 to the number of sources provided. `[0]`, out-of-range numbers (years
+  included) and standalone non-numeric brackets such as `[a]` or `[Source 1]` are invalid; brackets inside code,
+  glued to a word (`items[0]`) or part of a Markdown link are not citations.
+
+| measure | old (exact sentence; any cited number counts) | new (shared checks; valid citations only) |
+|---|---|---|
+| Unanswerable questions correctly refused | 3/9 (33.3%) | 3/9 (33.3%) |
+| Answerable questions wrongly refused | 0/30 (0.0%) | 1/30 (3.3%) |
+| Answerable questions: not a refusal and cites no source (uncited) | 7/30 (23.3%) | 6/30 (20.0%) |
+| Unanswerable questions: not a refusal and cites no source | 4/9 (44.4%) | 4/9 (44.4%) |
+| Answers with at least one invalid citation, all 39 | 1/39 (2.6%) | 2/39 (5.1%) |
+
+The only question whose refusal status changed is q03 ("Unfortunately, I couldn't find this in your
+documents."), now counted as a refusal of an answerable question: 1 of 30 wrongly refused, as the earlier note
+had said in words. The refusal of unanswerable questions is unchanged at 3 of 9. n is small and nothing was
+graded for correctness.
+
 ## Suspected label issues
 
 Nothing was changed in the question file. Candidates noticed in Phase 2:

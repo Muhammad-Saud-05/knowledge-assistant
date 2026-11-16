@@ -199,3 +199,36 @@ def test_main_summary_only_works_from_saved_answers_and_writes_to_grade(tmp_path
     out = capsys.readouterr().out
     assert "correctly refused" in out and "1/1 (100.0%)" in out
     assert (tmp_path / ra.GRADE_FILE).exists()
+
+
+# ------------------------------------------------------------------- recompute
+
+
+def test_recompute_compares_the_old_and_new_checks_on_saved_answers_without_running_anything():
+    records = [
+        record("q01", "Fine [1]."),
+        record("q02", "Unfortunately, I couldn't find this in your documents."),  # old: an answer; new: a refusal
+        record("q03", "Only a zero [0]."),  # old: counted as cited; new: invalid, so uncited
+        record("q04", "No citation here."),
+        record("q05", NOT_FOUND, answerable=False),
+        record("q06", "Sorry, I couldn't find this in your documents.", answerable=False),  # old: answered
+        record("q07", "A confident claim.", answerable=False),
+    ]
+    s = ra.recompute(records)
+    assert s["correctly_refused"] == (1, 2) and s["n_unanswerable"] == 3
+    assert s["wrongly_refused"] == (0, 1) and s["n_answerable"] == 4
+    assert s["uncited_answerable"] == (2, 2)  # old: q02 and q04; new: q03 and q04
+    assert s["invalid_answers"] == (1, 1) and s["changed_refusal"] == ["q02", "q06"]
+    text = ra.render_recompute(s)
+    assert "1/3 (33.3%)" in text and "2/3 (66.7%)" in text and "q02, q06" in text
+
+
+def test_main_recompute_prints_the_table(tmp_path, capsys, monkeypatch):
+    qs = [question("q01", "exact_term"), question("q02", "unanswerable", answerable=False)]
+    monkeypatch.setattr(ra, "load_questions", lambda path=None: qs)
+    monkeypatch.setattr(ra, "select_questions", lambda questions: qs)
+    ra.append_record(tmp_path / ra.ANSWERS_FILE, record("q01", "Fine [1]."))
+    ra.append_record(tmp_path / ra.ANSWERS_FILE, record("q02", "Sorry, I couldn't find this in your documents.", answerable=False))
+    assert ra.main(["--out", str(tmp_path), "--recompute"]) == 0
+    assert "Unanswerable questions correctly refused | 0/1 (0.0%) | 1/1 (100.0%)" in capsys.readouterr().out
+    assert ra.main(["--out", str(tmp_path / "empty"), "--recompute"]) == 1
