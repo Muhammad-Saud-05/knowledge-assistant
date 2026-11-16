@@ -47,6 +47,14 @@ export interface Timings {
 
 export interface DoneEvent {
   text: string
+  /** The answer is a "not found" refusal (decided by the server's one shared check). */
+  refused: boolean
+  /** Source numbers the answer cites that match a source (1 to the number of sources), sorted. */
+  cited: number[]
+  /** Citation-like brackets that match no source, as written: "0", "9", "Source 2" ... */
+  invalid_citations: string[]
+  /** Not a refusal, and no valid citation: the answer cannot be checked against a source. */
+  uncited: boolean
   validation: Validation
   timings: Timings
 }

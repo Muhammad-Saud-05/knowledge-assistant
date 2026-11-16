@@ -8,31 +8,20 @@ interface Props {
   onRetry: (id: number) => void
 }
 
-/** Plain-language warnings about a finished answer. */
-function notices(turn: Turn): { kind: 'info' | 'warning'; text: string }[] {
+export const REFUSED_MESSAGE =
+  "Your documents don't seem to contain an answer to this. Try rephrasing the question, or add the document that has it."
+export const UNVERIFIED_BADGE = 'Unverified: this answer cites no source'
+export const INVALID_CITATIONS_BADGE = "Some citation numbers don't match a source"
+
+/** What to say about a finished answer. A refusal is shown as before (a note); an answer that is not a
+ *  refusal gets a badge when it cites nothing, and another when some citation matches no source. */
+function notes(turn: Turn): { refusal: boolean; badges: string[] } {
   const done = turn.done
-  if (!done) return []
-  const found: { kind: 'info' | 'warning'; text: string }[] = []
-  if (done.validation.is_not_found) {
-    found.push({
-      kind: 'info',
-      text: "Your documents don't seem to contain an answer to this. Try rephrasing the question, or add the document that has it.",
-    })
-  }
-  if (done.validation.cited_invalid.length > 0) {
-    const numbers = done.validation.cited_invalid.map((n) => `[${n}]`).join(', ')
-    found.push({
-      kind: 'warning',
-      text: `The answer cites ${numbers}, which ${done.validation.cited_invalid.length === 1 ? 'is' : 'are'} not among the sources listed. Treat those parts with caution.`,
-    })
-  }
-  if (done.validation.has_no_citations) {
-    found.push({
-      kind: 'warning',
-      text: "This answer has no citations, so it can't be checked against your documents. Treat it with caution.",
-    })
-  }
-  return found
+  if (!done) return { refusal: false, badges: [] }
+  const badges: string[] = []
+  if (!done.refused && done.uncited) badges.push(UNVERIFIED_BADGE)
+  if (done.invalid_citations.length > 0) badges.push(INVALID_CITATIONS_BADGE)
+  return { refusal: done.refused, badges }
 }
 
 export const SEARCHING_MESSAGE = 'Searching your documents...'
@@ -76,13 +65,23 @@ export default function TurnView({ turn, canRetry, onRetry }: Props) {
           </div>
         )}
 
-        {notices(turn).map((notice) => (
-          <p key={notice.text} className={`notice ${notice.kind}`} role="note">
-            {notice.text}
+        {notes(turn).refusal && (
+          <p className="notice info" role="note">
+            {REFUSED_MESSAGE}
           </p>
-        ))}
+        )}
 
-        <SourceList sources={turn.sources} cited={turn.done?.validation.cited_valid ?? []} />
+        <SourceList sources={turn.sources} cited={turn.done?.cited ?? []} />
+
+        {notes(turn).badges.length > 0 && (
+          <p className="answer-flags">
+            {notes(turn).badges.map((text) => (
+              <span key={text} className="flag" role="note">
+                {text}
+              </span>
+            ))}
+          </p>
+        )}
 
         {turn.done && (
           <p className="timing">

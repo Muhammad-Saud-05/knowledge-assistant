@@ -423,3 +423,19 @@ button.stop {
     padding: 0.7rem;
   }
 }
+
+.answer-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+}
+
+.flag {
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--warning-border, #b7791f);
+  border-radius: 999px;
+  background: var(--warning-bg, transparent);
+  color: var(--warning-text, inherit);
+  font-size: 0.8rem;
+}

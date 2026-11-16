@@ -14,6 +14,10 @@ function handlers() {
 
 const DONE = {
   text: 'Answer [1].',
+  refused: false,
+  cited: [1],
+  invalid_citations: [],
+  uncited: false,
   validation: { cited_valid: [1], cited_invalid: [], has_no_citations: false, is_not_found: false },
   timings: { retrieval: 0.1, first_token: 0.5, total: 2, queue_wait: 0 },
 }

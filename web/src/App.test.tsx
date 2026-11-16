@@ -60,11 +60,16 @@ const SOURCES: SourceItem[] = [
   },
 ]
 
-function doneEvent(overrides: Partial<DoneEvent['validation']> = {}, text = 'A token bucket refills steadily [1].'): DoneEvent {
+function doneEvent(overrides: Partial<Omit<DoneEvent, 'text'>> = {}, text = 'A token bucket refills steadily [1].'): DoneEvent {
   return {
     text,
-    validation: { cited_valid: [1], cited_invalid: [], has_no_citations: false, is_not_found: false, ...overrides },
+    refused: false,
+    cited: [1],
+    invalid_citations: [],
+    uncited: false,
+    validation: { cited_valid: [1], cited_invalid: [], has_no_citations: false, is_not_found: false },
     timings: { retrieval: 0.1, first_token: 0.6, total: 3.2, queue_wait: 0 },
+    ...overrides,
   }
 }
 
@@ -349,25 +354,42 @@ describe('notices about the answer', () => {
     await server.pipe().end()
   }
 
-  it('tells the user when the documents do not contain the answer', async () => {
-    await finishWith(doneEvent({ cited_valid: [], is_not_found: true }, "I couldn't find this in your documents."))
+  it('shows a refusal in the not-found style, with no badge, and keeps the text and sources', async () => {
+    await finishWith(
+      doneEvent({ refused: true, cited: [], uncited: false }, "Unfortunately, I couldn't find this in your documents."),
+    )
     expect(screen.getByText(/don't seem to contain an answer/)).toBeTruthy()
-    expect(screen.queryByText(/no citations/)).toBeNull()
+    expect(screen.getByText("Unfortunately, I couldn't find this in your documents.")).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Sources' })).toBeTruthy()
+    expect(screen.queryByText(/Unverified/)).toBeNull() // a refusal is not "unverified"
   })
 
-  it('warns about citations that do not exist', async () => {
-    await finishWith(doneEvent({ cited_valid: [1], cited_invalid: [7, 9] }, 'Claim [1] and [7] and [9].'))
-    expect(screen.getByText(/cites \[7\], \[9\], which are not among the sources/)).toBeTruthy()
+  it('shows an "Unverified" badge when an answer that is not a refusal cites no source', async () => {
+    await finishWith(doneEvent({ cited: [], uncited: true }, 'A claim with nothing behind it.'))
+    expect(screen.getByText('Unverified: this answer cites no source')).toBeTruthy()
+    expect(screen.getByText('A claim with nothing behind it.')).toBeTruthy() // the answer stays visible
+    expect(screen.getByRole('region', { name: 'Sources' })).toBeTruthy()
+    expect(screen.queryByText(/don't seem to contain an answer/)).toBeNull()
+    expect(screen.queryByText(/don't match a source/)).toBeNull()
   })
 
-  it('warns when the answer has no citations at all', async () => {
-    await finishWith(doneEvent({ cited_valid: [], has_no_citations: true }, 'A claim with nothing behind it.'))
-    expect(screen.getByText(/no citations, so it can't be checked/)).toBeTruthy()
+  it('shows a badge when some citation numbers match no source, and keeps the valid ones marked', async () => {
+    await finishWith(doneEvent({ cited: [1], invalid_citations: ['0', '7'] }, 'Claim [1] and [0] and [7].'))
+    expect(screen.getByText("Some citation numbers don't match a source")).toBeTruthy()
+    expect(screen.queryByText(/Unverified/)).toBeNull() // it does cite a real source
+    expect(screen.getByText('cited')).toBeTruthy() // source [1] is still marked as cited
   })
 
-  it('shows no warning for a normal, cited answer', async () => {
+  it('can show both badges when the only citations are invalid', async () => {
+    await finishWith(doneEvent({ cited: [], uncited: true, invalid_citations: ['9'] }, 'Only a bad one [9].'))
+    expect(screen.getByText('Unverified: this answer cites no source')).toBeTruthy()
+    expect(screen.getByText("Some citation numbers don't match a source")).toBeTruthy()
+  })
+
+  it('shows no badge and no note for a normal, cited answer', async () => {
     await finishWith(doneEvent())
     expect(document.querySelector('.notice')).toBeNull()
+    expect(document.querySelector('.flag')).toBeNull()
   })
 })
 
