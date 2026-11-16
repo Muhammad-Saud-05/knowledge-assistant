@@ -16,3 +16,8 @@ web/dist/
 
 # Answer-level check output (contains document text)
 eval/answers/
+
+# Tool caches
+.pytest_cache/
+web/.vite/
+*.egg-info/
