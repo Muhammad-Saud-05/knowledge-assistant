@@ -266,3 +266,23 @@ def test_a_custom_origin_list_is_what_the_app_enforces(pool, embedder, fake_llm,
     with TestClient(custom, base_url="http://localhost") as test_client:
         assert test_client.post("/api/ask", json={"question": "q"}, headers={"Origin": "http://myapp.test:3000"}).status_code == 200
         assert test_client.post("/api/ask", json={"question": "q"}, headers={"Origin": ALLOWED}).status_code == 403
+
+
+# ------------------------------------------------- the Documents page's routes
+
+
+def test_delete_and_upload_refuse_a_foreign_origin_and_a_foreign_host(client, conn, populated):
+    from tests.test_api_uploads import note
+
+    for headers in ({"Origin": EVIL}, {"Origin": "null"}):
+        assert client.delete(f"/api/documents/{populated}", headers=headers).status_code == 403
+        files = {"file": ("x.md", note("x"), "text/markdown")}
+        assert client.post("/api/ingest", files=files, headers=headers).status_code == 403
+    assert client.delete(f"/api/documents/{populated}", headers={"Host": "evil.example"}).status_code == 400
+    assert len(client.get("/api/documents").json()) == 1  # nothing was deleted or added
+
+
+def test_delete_with_an_allowed_origin_works_and_gets_cors_headers(client, conn, populated):
+    response = client.delete(f"/api/documents/{populated}", headers={"Origin": ALLOWED})
+    assert response.status_code == 204
+    assert response.headers["access-control-allow-origin"] == ALLOWED

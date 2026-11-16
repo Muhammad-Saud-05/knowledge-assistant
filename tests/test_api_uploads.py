@@ -241,10 +241,32 @@ def test_documents_list_shows_details_and_chunk_counts_newest_first(client, conn
 
     assert [d["id"] for d in documents] == [second["document_id"], first["document_id"]]
     newest = documents[0]
-    assert set(newest) == {"id", "title", "path", "source_type", "doc_date", "ingested_at", "chunks"}
+    assert set(newest) == {"id", "title", "source_type", "display_name", "doc_date", "ingested_at", "chunk_count"}
     assert newest["title"] == "Note" and newest["source_type"] == "markdown"
-    assert newest["path"].endswith("second.md") and newest["chunks"] == second["chunks"]
+    assert newest["display_name"] == "second.md" and newest["chunk_count"] == second["chunks"]
     assert newest["doc_date"] is not None and newest["ingested_at"]
+
+
+@pytest.mark.parametrize(
+    "stored",
+    ["data/corpus/docs/fastapi-async.md", "C:\\Users\\someone\\Documents\\private\\notes.md", "/home/user/secret/notes.md", "nested\\mixed/slashes.md"],
+)
+def test_documents_list_shows_a_file_name_only_never_a_path(client, conn, add_document, stored):
+    add_document(conn, "Some title", stored, [("some text here", None, None)])
+    [document] = client.get("/api/documents").json()
+    name = document["display_name"]
+    assert name == stored.replace("\\", "/").rsplit("/", 1)[-1]
+    assert "/" not in name and "\\" not in name and ":" not in name
+    assert "path" not in document
+    assert stored not in client.get("/api/documents").text  # the stored path appears nowhere in the reply
+
+
+def test_a_successful_upload_returns_what_the_page_needs_to_show_it(client, conn):
+    result = upload(client, "shown.md", note("hello")).json()
+    assert result["status"] == "new" and result["filename"] == "shown.md"
+    assert isinstance(result["document_id"], int) and result["chunks"] >= 1
+    [document] = client.get("/api/documents").json()
+    assert document["id"] == result["document_id"] and document["chunk_count"] == result["chunks"]
 
 
 # --------------------------------------------------------------------- delete
@@ -256,8 +278,7 @@ def test_delete_removes_the_document_its_chunks_and_the_uploaded_file(client, co
 
     response = client.delete(f"/api/documents/{document_id}")
 
-    assert response.status_code == 200
-    assert response.json() == {"deleted": True, "file_removed": True}
+    assert response.status_code == 204 and response.content == b""
     assert count(conn, "documents") == 0 and count(conn, "chunks") == 0
     assert not (api_settings.upload_dir / "notes.md").exists()
     assert client.get("/api/documents").json() == []
@@ -271,7 +292,7 @@ def test_delete_never_removes_a_file_outside_the_upload_folder(client, conn, tmp
 
     response = client.delete(f"/api/documents/{document_id}")
 
-    assert response.status_code == 200 and response.json() == {"deleted": True, "file_removed": False}
+    assert response.status_code == 204
     assert outside.read_text() == "do not delete me"
     assert count(conn, "documents") == 0
 
@@ -283,7 +304,7 @@ def test_delete_with_a_relative_path_to_a_corpus_file_leaves_it_alone(client, co
     (corpus / "keep.md").write_text("keep")
     document_id, _ = add_document(conn, "Keep", "sample_corpus/keep.md", [("some text here", None, None)])
 
-    assert client.delete(f"/api/documents/{document_id}").json()["file_removed"] is False
+    assert client.delete(f"/api/documents/{document_id}").status_code == 204
     assert (corpus / "keep.md").read_text() == "keep"
 
 
@@ -294,8 +315,9 @@ def test_delete_ignores_a_stored_path_that_climbs_out_of_the_upload_folder(clien
     tricky = str(api_settings.upload_dir / ".." / ".." / "victim.md")
     document_id, _ = add_document(conn, "Tricky", tricky, [("some text here", None, None)])
 
-    assert client.delete(f"/api/documents/{document_id}").json()["file_removed"] is False
+    assert client.delete(f"/api/documents/{document_id}").status_code == 204
     assert victim.read_text() == "keep"
+    assert count(conn, "documents") == 0  # the document is gone, the file outside the upload folder is not
 
 
 def test_delete_unknown_id_is_404(client):
@@ -305,3 +327,30 @@ def test_delete_unknown_id_is_404(client):
 
 def test_delete_with_a_non_numeric_id_is_a_validation_error(client):
     assert client.delete("/api/documents/abc").status_code == 422
+
+
+@pytest.mark.parametrize("bad_id", ["0", "-1", "2147483648", "99999999999999999999", "1.5", "%2e%2e"])
+def test_delete_validates_the_id_before_touching_the_database(client, conn, add_document, bad_id):
+    add_document(conn, "Keep me", "kept.md", [("some text here", None, None)])
+    assert client.delete(f"/api/documents/{bad_id}").status_code in (404, 422)
+    assert count(conn, "documents") == 1
+
+
+def test_delete_removes_only_the_chosen_document(client, conn, api_settings):
+    keep = upload(client, "keep.md", note("keep")).json()["document_id"]
+    gone = upload(client, "gone.md", note("gone")).json()["document_id"]
+    assert client.delete(f"/api/documents/{gone}").status_code == 204
+    assert [d["id"] for d in client.get("/api/documents").json()] == [keep]
+    assert (api_settings.upload_dir / "keep.md").exists() and not (api_settings.upload_dir / "gone.md").exists()
+    assert client.delete(f"/api/documents/{gone}").status_code == 404  # already gone
+
+
+def test_deleting_logs_ids_and_outcomes_but_no_text_or_paths(client, conn, api_settings, caplog):
+    document_id = upload(client, "private-name.md", note("secret-words-in-the-body")).json()["document_id"]
+    caplog.clear()  # the upload's own log line (which has the file name) is not what is checked here
+    with caplog.at_level("INFO", logger="kb.api"):
+        assert client.delete(f"/api/documents/{document_id}").status_code == 204
+    logged = caplog.text
+    assert f"document={document_id}" in logged
+    assert "secret-words-in-the-body" not in logged
+    assert str(api_settings.upload_dir) not in logged and "private-name" not in logged

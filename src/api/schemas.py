@@ -36,16 +36,11 @@ class HealthResponse(BaseModel):
 class DocumentOut(BaseModel):
     id: int
     title: str | None
-    path: str
     source_type: str
+    display_name: str  # the file name only: never a folder, never an absolute path
     doc_date: date | None
     ingested_at: datetime
-    chunks: int
-
-
-class DeleteResult(BaseModel):
-    deleted: bool
-    file_removed: bool  # the uploaded copy under data/uploads was also deleted
+    chunk_count: int
 
 
 class IngestResult(BaseModel):
