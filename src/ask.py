@@ -109,11 +109,11 @@ def _print_report(answer: Answer, model_load_seconds: float, mode: str) -> None:
         else:
             print("(none cited)")
 
-    if validation.cited_invalid:
-        numbers = ", ".join(str(n) for n in validation.cited_invalid)
+    if validation.invalid_citations:
+        found = ", ".join(f"[{c}]" for c in validation.invalid_citations)
         print(
-            f"\nWarning: the answer cites source number(s) {numbers}, but only "
-            f"{len(answer.chunks)} sources were retrieved. Those citations are not valid."
+            f"\nWarning: the answer has citation(s) {found} that do not match any of the "
+            f"{len(answer.chunks)} sources retrieved. Those citations are not valid."
         )
     if validation.has_no_citations:
         print(

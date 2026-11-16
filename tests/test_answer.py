@@ -7,6 +7,7 @@ from src.synthesis.answer import (
     answer_question,
     answer_question_stream,
     build_prompt,
+    is_refusal,
     parse_citations,
     validate_answer,
 )
@@ -109,7 +110,7 @@ def test_delimiters_in_title_and_heading_are_neutralised_too():
         ("Repeated [2] and again [2].", {2}),
         ("Mixed [1][2, 3] end [5]", {1, 2, 3, 5}),
         ("Not citations: [a] [] [1.5] [see 1] [x, 2]", set()),
-        ("A year [2024] is not a citation", set()),
+        ("A year [2024] is out of range, so it is an invalid citation", {2024}),
         ("No brackets at all", set()),
         ("Out of range [7] and [0] are still parsed", {7, 0}),
     ],
@@ -151,9 +152,9 @@ def test_validation_not_found_sentence():
     assert validate_answer(f'"{NOT_FOUND}"', 3).is_not_found
 
 
-def test_not_found_sentence_plus_extra_text_is_not_a_not_found_answer():
+def test_not_found_sentence_followed_by_extra_text_is_still_a_refusal_because_it_starts_the_answer():
     result = validate_answer(NOT_FOUND + " But I think the answer is 42.", num_sources=3)
-    assert not result.is_not_found and result.has_no_citations
+    assert result.is_not_found and not result.has_no_citations and result.refused and not result.uncited
 
 
 def test_validation_with_zero_sources():
@@ -237,3 +238,80 @@ def test_streaming_with_empty_retrieval_skips_the_llm(conn, embedder):
         next(stream)
     answer = done.value.value  # the generator's return value rides on StopIteration
     assert llm.calls == [] and answer.validation.is_not_found
+
+
+# ----------------------------------------------------- refusal detection (one shared function)
+
+CURLY = "I couldn" + chr(0x2019) + "t find this in your documents"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        NOT_FOUND,
+        "Unfortunately, I couldn't find this in your documents.",  # a lead-in word
+        "Sorry, I couldn't find this in your documents",
+        CURLY + ".",  # curly apostrophe
+        "I COULDN'T FIND THIS IN YOUR DOCUMENTS!",  # case
+        "  i couldn't   find this\nin your documents.  ",  # spacing and a line break
+        '"' + NOT_FOUND + '"',
+        NOT_FOUND + " But I think the answer is 42.",  # the sentence starts the answer
+        "Some context [1]. I couldn't find this in your documents.",  # the last sentence
+        "The sources discuss caching [1].\n\nI couldn't find this in your documents.",
+    ],
+)
+def test_these_answers_are_refusals(text):
+    assert is_refusal(text) and validate_answer(text, 3).is_not_found
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The documents say that a cache stores results [1].",
+        "",
+        "I could not find it.",  # different words
+        "I couldn't find this in the documents.",  # not the sentence
+        # a long answer that only mentions the sentence in the middle is not a refusal
+        "Caching stores results for reuse [1]. A tool that says I couldn't find this in your documents is "
+        "reporting a miss. Caches are also invalidated by a time to live [2], and the details differ [3].",
+    ],
+)
+def test_these_answers_are_not_refusals(text):
+    assert not is_refusal(text)
+
+
+def test_a_refusal_has_no_uncited_flag_but_a_normal_answer_without_citations_does():
+    assert not validate_answer("Unfortunately, I couldn't find this in your documents.", 3).uncited
+    assert validate_answer("A claim with no source.", 3).uncited
+
+
+# ------------------------------------------------------- citation validity
+
+
+def test_zero_out_of_range_and_non_numeric_brackets_are_invalid():
+    result = validate_answer("Fine [1]. Zero [0]. Big [9]. Odd [a] and [Source 2].", num_sources=3)
+    assert result.cited_valid == [1]
+    assert result.cited_invalid == [0, 9]
+    assert result.invalid_citations == ["0", "9", "a", "Source 2"]
+    assert not result.uncited  # it has one valid citation
+
+
+def test_only_invalid_citations_means_uncited_and_a_clean_answer_has_none_invalid():
+    assert validate_answer("Claim [0].", 3).uncited
+    clean = validate_answer("Claim [1][2, 3].", 3)
+    assert clean.invalid_citations == [] and clean.cited_valid == [1, 2, 3] and not clean.uncited
+
+
+def test_code_markdown_links_and_indexing_are_not_citations():
+    text = (
+        "Use `items[0]` or items[1], a List[Item], and [the docs](http://example.com).\n"
+        "```python\nvalues = [x for x in data]\nfirst = values[0]\n```\nDone [1]."
+    )
+    result = validate_answer(text, 3)
+    assert result.invalid_citations == [] and result.cited_valid == [1]
+
+
+def test_valid_numbers_are_one_to_the_number_of_sources():
+    assert validate_answer("a [1] b [3]", 3).cited_valid == [1, 3]
+    assert validate_answer("a [4]", 3).invalid_citations == ["4"]
+    assert validate_answer("a [1]", 0).invalid_citations == ["1"]

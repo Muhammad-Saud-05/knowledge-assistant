@@ -78,49 +78,96 @@ def build_prompt(question: str, chunks: list[RetrievedChunk]) -> tuple[str, str]
 
 # ------------------------------------------------------------------ citations
 
-# One bracket group of comma-separated numbers: [1]  [1, 2]  [ 3,4 ].
-# [1][2] is simply two groups. Numbers with 4+ digits (years like [2024]) and
-# non-numbers like [a] are not citations and are ignored.
-_CITATION_GROUP = re.compile(r"\[\s*(\d{1,3}(?:\s*,\s*\d{1,3})*)\s*\]")
+# A citation is a bracket with source numbers in it: [1], [1][2], [1, 2]. Everything that looks like
+# a citation but does not point at one of the sources provided is INVALID: [0], numbers above the
+# number of sources (years such as [2024] too), and standalone non-numeric brackets such as [a] or
+# [Source 1]. Code is not scanned (fenced blocks and `inline code`), and a bracket glued to a word
+# (items[0], List[Item]) or followed by "(" (a Markdown link) is not a citation either.
+_FENCED_CODE = re.compile(r"```.*?```", re.DOTALL)
+_INLINE_CODE = re.compile(r"`[^`\n]*`")
+_NUMERIC_BRACKET = re.compile(r"\[\s*(\d+(?:\s*,\s*\d+)*)\s*\]")
+_OTHER_BRACKET = re.compile(r"(?<![\w)\]])\[([A-Za-z][^\[\]\n]{0,40})\](?!\()")
+
+
+def _without_code(text: str) -> str:
+    return _INLINE_CODE.sub(" ", _FENCED_CODE.sub(" ", text))
+
+
+def scan_citations(text: str) -> tuple[list[int], list[str]]:
+    """(source numbers cited, other citation-like brackets), each in order of appearance."""
+    plain = _without_code(text)
+    numbers = [int(n) for group in _NUMERIC_BRACKET.findall(plain) for n in group.split(",")]
+    others = [" ".join(m.split()) for m in _OTHER_BRACKET.findall(plain)]
+    return numbers, others
 
 
 def parse_citations(text: str) -> set[int]:
-    """Every source number cited in the text."""
-    numbers: set[int] = set()
-    for group in _CITATION_GROUP.findall(text):
-        numbers.update(int(n) for n in group.split(","))
-    return numbers
+    """Every source number cited in the text (whether or not it points at a real source)."""
+    return set(scan_citations(text)[0])
+
+
+# ----------------------------------------------------------------- refusals
+
+# The one place that decides whether an answer is a "not found" refusal; the API sends the result to
+# the page as `refused`, so the page never has to look at the text itself.
+#
+# Policy. The sentence is compared ignoring case, extra whitespace, surrounding quotes and the
+# difference between curly and straight apostrophes. An answer is a refusal when the sentence
+#   (a) starts the answer, after at most three lead-in words ("Unfortunately, I couldn't find ..."), or
+#   (b) is in the last sentence of the answer.
+# An answer that only mentions the sentence in the middle of otherwise normal content is NOT a refusal.
+_REFUSAL_CORE = "i couldn't find this in your documents"
+_APOSTROPHES = str.maketrans({chr(0x2019): "'", chr(0x2018): "'", chr(0x02BC): "'"})
+_STARTS_WITH_REFUSAL = re.compile(r"^(?:\W*\w+\W+){0,3}?" + re.escape(_REFUSAL_CORE))
+_SENTENCE_BREAK = re.compile(r"(?<=[.!?])\s+|\n+")
+
+
+def _normalise_for_refusal(text: str) -> str:
+    return " ".join(text.translate(_APOSTROPHES).lower().split())
+
+
+def is_refusal(text: str) -> bool:
+    plain = _normalise_for_refusal(text)
+    if _REFUSAL_CORE not in plain:
+        return False
+    if _STARTS_WITH_REFUSAL.match(plain.lstrip("\"'`*_ ")):
+        return True
+    sentences = [s for s in _SENTENCE_BREAK.split(plain) if s.strip()]
+    return bool(sentences) and _REFUSAL_CORE in sentences[-1]
 
 
 @dataclass
 class ValidationResult:
-    cited_valid: list[int]  # citations that point to a real source, sorted
-    cited_invalid: list[int]  # citation numbers with no matching source, sorted
-    is_not_found: bool  # the model said the sources do not contain the answer
-    has_no_citations: bool  # an answer with no valid citation at all
+    cited_valid: list[int]  # citations that point to a real source (1 to the number of sources), sorted
+    cited_invalid: list[int]  # source numbers cited that point to no source ([0], too large), sorted
+    is_not_found: bool  # the answer is a refusal (see is_refusal)
+    has_no_citations: bool  # not a refusal, and no valid citation at all
+    # Everything citation-like that does not match a source, as written: out-of-range numbers (as text,
+    # ascending) followed by other brackets such as "a" or "Source 1" in order of appearance.
+    invalid_citations: list[str] = field(default_factory=list)
 
+    @property
+    def refused(self) -> bool:
+        return self.is_not_found
 
-# Curly quotes written by code point so the source stays plain ASCII.
-_QUOTE_CHARS = "\"'`" + chr(0x201C) + chr(0x201D) + chr(0x2018) + chr(0x2019)
-
-
-def _is_not_found(text: str) -> bool:
-    # Tolerate surrounding whitespace or quotes and a curly apostrophe, nothing more:
-    # the sentence plus any extra text is not a "not found" answer.
-    cleaned = text.strip().strip(_QUOTE_CHARS).strip()
-    return cleaned.replace(chr(0x2019), "'") == NOT_FOUND
+    @property
+    def uncited(self) -> bool:
+        return self.has_no_citations
 
 
 def validate_answer(text: str, num_sources: int) -> ValidationResult:
-    cited = parse_citations(text)
+    numbers, others = scan_citations(text)
+    cited = set(numbers)
     valid = sorted(n for n in cited if 1 <= n <= num_sources)
     invalid = sorted(n for n in cited if not 1 <= n <= num_sources)
-    not_found = _is_not_found(text)
+    invalid_text = [str(n) for n in invalid] + list(dict.fromkeys(others))
+    refused = is_refusal(text)
     return ValidationResult(
         cited_valid=valid,
         cited_invalid=invalid,
-        is_not_found=not_found,
-        has_no_citations=not not_found and not valid,
+        is_not_found=refused,
+        has_no_citations=not refused and not valid,
+        invalid_citations=invalid_text,
     )
 
 

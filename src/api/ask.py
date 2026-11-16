@@ -68,6 +68,11 @@ def done_payload(answer: Answer, queue_wait: float) -> dict:
     validation = answer.validation
     return {
         "text": answer.text,
+        # The page uses these four. `refused` is the shared refusal check (answer.is_refusal).
+        "refused": validation.refused,
+        "cited": validation.cited_valid,
+        "invalid_citations": validation.invalid_citations,
+        "uncited": validation.uncited,
         "validation": {
             "cited_valid": validation.cited_valid,
             "cited_invalid": validation.cited_invalid,

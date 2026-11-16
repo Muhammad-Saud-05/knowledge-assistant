@@ -87,6 +87,20 @@ def test_tokens_are_json_text_pieces_that_add_up_to_the_answer(client, stored, f
     assert joined == fake_llm.reply == events[-1][1]["text"]  # newlines and quotes survive intact
 
 
+def test_done_event_carries_refused_cited_invalid_citations_and_uncited(client, stored, fake_llm):
+    cases = [
+        ("A token bucket refills steadily [1][2].", dict(refused=False, cited=[1, 2], invalid_citations=[], uncited=False)),
+        ("Unfortunately, I couldn't find this in your documents.", dict(refused=True, cited=[], invalid_citations=[], uncited=False)),
+        ("A claim with no citation at all.", dict(refused=False, cited=[], invalid_citations=[], uncited=True)),
+        ("Claims [1] [0] [9] [a].", dict(refused=False, cited=[1], invalid_citations=["0", "9", "a"], uncited=False)),
+        ("Only a bad one [9].", dict(refused=False, cited=[], invalid_citations=["9"], uncited=True)),
+    ]
+    for reply, expected in cases:
+        fake_llm.reply = reply
+        done = parse_sse(ask(client).text)[-1][1]
+        assert {k: done[k] for k in expected} == expected, reply
+
+
 def test_done_event_carries_validation_and_timings(client, stored, fake_llm):
     fake_llm.reply = "A token bucket refills steadily [1][2]."
     done = parse_sse(ask(client).text)[-1][1]
