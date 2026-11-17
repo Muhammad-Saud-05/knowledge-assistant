@@ -288,7 +288,18 @@ This is a mitigation, not a guarantee. A small model can still be fooled by a cl
 
 ## Web app
 
-A chat page in the browser, backed by a small API. Both run only on your computer.
+A chat interface in the browser, backed by a small API. Both run only on your computer.
+
+<!-- screenshots go here -->
+
+### The interface
+
+- **Sidebar** (about 260 px; a drawer opened by the menu button on phones): a **New chat** button, the conversation history grouped under Today, Yesterday and Earlier (the title is the first question; hover or focus a row to delete it), and at the bottom **Documents**, a light/dark **theme toggle**, **Clear all history** (with an in-page confirmation) and the status of the database and Ollama.
+- **Thread**: your questions on the right in a bubble, answers full width with Markdown (lists, tables, code blocks with a Copy button). Valid citations such as `[2]` become small chips; clicking one, or **Sources (n)** under the answer, opens a **sources panel** on the right (a bottom sheet on phones) with the numbered passages, the clicked one highlighted, and the rerank rank and score when the server sent them. Esc or the close button closes it and the focus goes back to where you were. Under each finished answer: **Copy** and **Regenerate**. While the answer is written the view follows it only if you are at the bottom; scroll up and a **Jump to latest** button appears.
+- **Composer**: grows with your text (about 8 lines, then scrolls). Enter sends, Shift+Enter adds a line, and Enter while typing with an input method does not send. The send button becomes **Stop** while an answer is being written. **Compare across documents (slower)** is a toggle under the text box.
+- **History is kept in this browser only** (`localStorage`), the 50 most recent conversations. If storage is unavailable or full, the app keeps working and the sidebar says history will only last until the page is closed. A conversation is a list of questions and answers shown in one thread; **each question is still answered on its own**, because the back end keeps no conversation memory.
+- **Themes**: light and dark follow the system setting until you use the toggle, which is remembered. Colours, spacing and sizes are CSS variables in one file, `web/src/styles/tokens.css`. The app uses the system font and makes no request to any other site (no CDN, web fonts or analytics).
+- **Keyboard and screen readers**: everything is reachable by keyboard with visible focus rings, only the "reading your sources" line is a live region (streamed text is not), and animations stop when the system asks for reduced motion.
 
 ### Run it (two terminals)
 
@@ -315,9 +326,9 @@ A brand-new question takes roughly 10 to 70 seconds to show its first word on a 
 
 ### The Documents page
 
-The **Documents** tab next to **Chat** lists what is stored: title (with the file name under it), type, date and number of chunks. Nothing on the page, or in the list the API returns, is a folder path or an absolute path, only file names.
+**Documents** in the sidebar opens a page that lists what is stored: title (with the file name under it), type, date and number of chunks. Nothing on the page, or in the list the API returns, is a folder path or an absolute path, only file names.
 
-- **Upload:** the "Upload a document" button takes a `.pdf` or `.md` file. While it is being added the page shows "Uploading and indexing ..." (the progress is a spinner, not a percentage, because indexing takes a few seconds after the upload itself), then either the result ("Added notes.md (4 passages)", "Updated ...", "already stored and has not changed") or the reason it failed. The list refreshes afterwards.
+- **Upload:** the "Upload a document" button, or dragging a file onto the drop area, takes a `.pdf` or `.md` file (one at a time). While it is being added the page shows "Uploading and indexing ..." (the progress is a spinner, not a percentage, because indexing takes a few seconds after the upload itself), then either the result ("Added notes.md (4 passages)", "Updated ...", "already stored and has not changed") or the reason it failed. The list refreshes afterwards.
 - **Delete:** the "Delete" button on a row asks inside the page ("Delete this document and its 12 chunks? This cannot be undone.") and only deletes after "Yes, delete"; there are no browser pop-up dialogs. The document and its chunks are removed, and if it came from an upload, the uploaded copy in `data/uploads/` as well. A file anywhere else (such as `sample_corpus/` or `data/corpus/`) is never deleted, only its entry in the knowledge base.
 - **Careful:** the evaluation (`docs/eval_report.md`, `python -m eval.run_eval`) needs the 30-document corpus to stay ingested. Deleting corpus documents from this page changes its results (and makes it refuse to run) until they are ingested again.
 
