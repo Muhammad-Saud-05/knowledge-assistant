@@ -33,7 +33,7 @@ export default function StatusBadge() {
 
   const summary = summariseHealth(health, unreachable)
   return (
-    <span className={`status status-${summary.level}`} role="status" title={summary.label}>
+    <span className={`status status-${summary.level}`} role="status" aria-live="off" title={summary.label}>
       <span className="dot" aria-hidden="true" />
       <span className="status-label">{summary.label}</span>
     </span>

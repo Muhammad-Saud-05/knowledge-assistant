@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 import type { DocumentItem, Health, IngestResult } from '../api/types'
 import { EMPTY_MESSAGE, describeUpload } from '../documents'
-import DocumentsPage from './DocumentsPage'
+import DocumentsView from './DocumentsView'
 
 const DOCS: DocumentItem[] = [
   { id: 7, title: 'Rate Limiting Notes', source_type: 'markdown', display_name: 'rate.md', doc_date: '2026-10-05', ingested_at: '2026-11-14T08:00:00Z', chunk_count: 3 },
@@ -28,6 +28,7 @@ function json(body: unknown, status = 200) {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   calls = []
   documents = [...DOCS]
   listFails = false
@@ -69,7 +70,7 @@ function chooseFile(name = 'notes.md') {
 
 describe('the document list', () => {
   it('shows title, type, date and chunks for each document, and only file names', async () => {
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     const table = await screen.findByRole('table')
     const rows = within(table).getAllByRole('row')
     expect(rows).toHaveLength(3) // header + 2 documents
@@ -88,7 +89,7 @@ describe('the document list', () => {
 
   it('shows an empty state when there are no documents', async () => {
     documents = []
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     expect(await screen.findByText(EMPTY_MESSAGE)).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()
     expect(screen.getByRole('button', { name: 'Upload a document' })).toBeTruthy()
@@ -96,7 +97,7 @@ describe('the document list', () => {
 
   it('explains a failure to load, with a button that tries again', async () => {
     listFails = true
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('The server ran into a problem')
     listFails = false
@@ -110,7 +111,7 @@ describe('uploading', () => {
   it('shows progress while the file is being added, then the result, and refreshes the list', async () => {
     let finish!: (r: Response) => void
     onUpload = () => new Promise<Response>((resolve) => (finish = resolve))
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     await screen.findByRole('table')
     expect(listCalls()).toBe(1)
 
@@ -128,7 +129,7 @@ describe('uploading', () => {
 
   it('shows the server\'s message when the upload is refused', async () => {
     onUpload = () => json({ detail: 'Only .pdf and .md files can be uploaded.' }, 415)
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     await screen.findByRole('table')
     chooseFile('picture.png')
     const alert = await screen.findByRole('alert')
@@ -139,7 +140,7 @@ describe('uploading', () => {
 
   it('reports a file that could not be indexed (a failed result) as an error', async () => {
     onUpload = () => json({ status: 'failed', chunks: 0, document_id: null, filename: 'bad.pdf', error: 'The file could not be read or stored.' })
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     await screen.findByRole('table')
     chooseFile('bad.pdf')
     expect((await screen.findByRole('alert')).textContent).toBe('The file could not be read or stored.')
@@ -149,7 +150,7 @@ describe('uploading', () => {
     onUpload = () => {
       throw new TypeError('Failed to fetch')
     }
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     await screen.findByRole('table')
     chooseFile()
     expect((await screen.findByRole('alert')).textContent).toMatch(/couldn't reach the server/)
@@ -166,7 +167,7 @@ describe('uploading', () => {
 
 describe('deleting', () => {
   async function openConfirmation(title = 'Rate Limiting Notes') {
-    render(<DocumentsPage />)
+    render(<DocumentsView />)
     await screen.findByRole('table')
     fireEvent.click(screen.getByRole('button', { name: `Delete ${title}` }))
     return screen.getByRole('group', { name: `Confirm deleting ${title}` })
@@ -228,7 +229,7 @@ describe('deleting', () => {
 })
 
 describe('the Documents view in the app', () => {
-  it('opens next to the chat and the chat is still there when coming back', async () => {
+  it('opens from the sidebar and the chat is still there when coming back', async () => {
     render(<App />)
     expect(screen.queryByRole('region', { name: 'Documents' })).toBeNull()
     fireEvent.change(screen.getByLabelText('Your question'), { target: { value: 'half-typed question' } })
@@ -238,8 +239,62 @@ describe('the Documents view in the app', () => {
     expect(screen.getByRole('button', { name: 'Documents' }).getAttribute('aria-current')).toBe('page')
     expect(await screen.findByRole('table')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Chat' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New chat' }))
     expect(screen.queryByRole('region', { name: 'Documents' })).toBeNull()
     expect((screen.getByLabelText('Your question') as HTMLTextAreaElement).value).toBe('half-typed question')
+  })
+})
+
+describe('drag and drop', () => {
+  const dropOn = (zone: HTMLElement, files: File[]) => fireEvent.drop(zone, { dataTransfer: { files } })
+
+  it('shows a drop area that highlights while a file is dragged over it', async () => {
+    render(<DocumentsView />)
+    await screen.findByRole('table')
+    const zone = screen.getByTestId('dropzone')
+    expect(zone.textContent).toMatch(/Drag a PDF or Markdown file here/)
+    fireEvent.dragEnter(zone)
+    expect(zone.classList.contains('dragging')).toBe(true)
+    fireEvent.dragLeave(zone)
+    expect(zone.classList.contains('dragging')).toBe(false)
+  })
+
+  it('uploads a dropped file with the same progress and result as the button', async () => {
+    let finish!: (r: Response) => void
+    onUpload = () => new Promise<Response>((resolve) => (finish = resolve))
+    render(<DocumentsView />)
+    await screen.findByRole('table')
+
+    dropOn(screen.getByTestId('dropzone'), [new File(['# Notes'], 'dropped.md', { type: 'text/markdown' })])
+    expect((await screen.findByRole('status')).textContent).toMatch(/Uploading and indexing dropped\.md/)
+    expect(calls.filter((c) => c.method === 'POST' && c.url === '/api/ingest')).toHaveLength(1)
+
+    await act(async () => finish(json({ status: 'new', chunks: 2, document_id: 9, filename: 'dropped.md', error: null })))
+    expect(await screen.findByText('Added dropped.md (2 passages).')).toBeTruthy()
+    await waitFor(() => expect(listCalls()).toBe(2)) // the list refreshed
+    expect(screen.getByTestId('dropzone').classList.contains('dragging')).toBe(false)
+  })
+
+  it('adds only the first file when several are dropped, and says so', async () => {
+    render(<DocumentsView />)
+    await screen.findByRole('table')
+    dropOn(screen.getByTestId('dropzone'), [new File(['a'], 'one.md'), new File(['b'], 'two.md')])
+    expect((await screen.findByText(/Added notes\.md/)).textContent).toMatch(/Only the first file was added/)
+    expect(calls.filter((c) => c.method === 'POST' && c.url === '/api/ingest')).toHaveLength(1)
+  })
+
+  it('shows the error when a dropped file is refused', async () => {
+    onUpload = () => json({ detail: 'Only .pdf and .md files can be uploaded.' }, 415)
+    render(<DocumentsView />)
+    await screen.findByRole('table')
+    dropOn(screen.getByTestId('dropzone'), [new File(['x'], 'picture.png')])
+    expect((await screen.findByRole('alert')).textContent).toBe('Only .pdf and .md files can be uploaded.')
+  })
+
+  it('ignores a drop that holds no files', async () => {
+    render(<DocumentsView />)
+    await screen.findByRole('table')
+    dropOn(screen.getByTestId('dropzone'), [])
+    expect(calls.some((c) => c.method === 'POST')).toBe(false)
   })
 })

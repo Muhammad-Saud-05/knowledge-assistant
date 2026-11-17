@@ -78,6 +78,8 @@ let askCalls: { body: { question: string }; signal: AbortSignal | null | undefin
 let onAsk: (init: RequestInit) => Response | Promise<Response>
 
 beforeEach(() => {
+  localStorage.clear()
+  document.documentElement.removeAttribute('data-theme')
   health = HEALTHY
   askCalls = []
   onAsk = () => {
@@ -135,12 +137,21 @@ async function ask(question: string) {
   await waitFor(() => expect(askCalls.length).toBeGreaterThan(0))
 }
 
+/** The question and answer area (the sidebar and the top bar, which also show the question as a title, are outside it). */
+const thread = () => within(document.querySelector('.thread') as HTMLElement)
+
+/** Open the sources panel for the answer on screen, through its "Sources (n)" button. */
+async function openSourcesPanel() {
+  fireEvent.click(await screen.findByRole('button', { name: /^Sources \(\d+\)$/ }))
+  return screen.getByRole('region', { name: 'Sources' })
+}
+
 // ------------------------------------------------------------------------ tests
 
 describe('first visit', () => {
   it('shows a welcome message instead of an empty page', () => {
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Ask about your documents' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'What would you like to know about your documents?' })).toBeTruthy()
   })
 
   it('shows a green status when the database and Ollama work', async () => {
@@ -171,8 +182,8 @@ describe('sending a question', () => {
 
     expect(askCalls[0].body).toEqual({ question: 'How does a token bucket work?' })
     expect((box() as HTMLTextAreaElement).value).toBe('')
-    expect(screen.getByText('How does a token bucket work?')).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Ask about your documents' })).toBeNull()
+    expect(thread().getByText('How does a token bucket work?')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'What would you like to know about your documents?' })).toBeNull()
     await server.pipe().end()
   })
 
@@ -208,7 +219,7 @@ describe('the answer as it arrives', () => {
     expect(await screen.findByText('Searching your documents...')).toBeTruthy()
 
     await server.pipe().send(sse('sources', SOURCES))
-    const sources = screen.getByRole('region', { name: 'Sources' })
+    const sources = await openSourcesPanel() // the sources are available as soon as they arrive
     expect(within(sources).getAllByRole('listitem')).toHaveLength(2)
     expect(within(sources).getByText('Rate Limiting Notes')).toBeTruthy()
     expect(within(sources).getByText('Token bucket')).toBeTruthy()
@@ -223,7 +234,9 @@ describe('the answer as it arrives', () => {
     expect(screen.getByRole('button', { name: 'Stop' })).toBeTruthy()
 
     await server.pipe().send(sse('done', doneEvent()))
-    expect(screen.getByText('A token bucket refills steadily [1].')).toBeTruthy()
+    // the citation [1] is now a clickable chip inside the text
+    expect(screen.getByText(/A token bucket refills steadily/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Source 1' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy()
     expect(screen.getByText(/finished in 3\.2s/)).toBeTruthy()
     await server.pipe().end()
@@ -235,7 +248,7 @@ describe('the answer as it arrives', () => {
     await ask('q')
     await server.pipe().send(sse('sources', SOURCES) + sse('token', { text: 'x' }) + sse('done', doneEvent()))
 
-    const sources = screen.getByRole('region', { name: 'Sources' })
+    const sources = await openSourcesPanel()
     const previews = sources.querySelectorAll('.source-text')
     expect(previews[0].textContent!.length).toBeLessThanOrEqual(153)
     expect(previews[0].textContent!.endsWith('...')).toBe(true)
@@ -334,7 +347,7 @@ describe('waiting for the first words', () => {
     expect(screen.queryByRole('region', { name: 'Sources' })).toBeNull()
 
     await server.pipe().send(sse('sources', SOURCES))
-    expect(within(screen.getByRole('region', { name: 'Sources' })).getAllByRole('listitem')).toHaveLength(2)
+    expect(within(await openSourcesPanel()).getAllByRole('listitem')).toHaveLength(2)
     const status = screen.getByText(/Reading your sources/).closest('[role="status"]')
     expect(status?.textContent).toBe('Reading your sources - on this CPU the first words can take 30 to 40 seconds')
 
@@ -360,7 +373,7 @@ describe('notices about the answer', () => {
     )
     expect(screen.getByText(/don't seem to contain an answer/)).toBeTruthy()
     expect(screen.getByText("Unfortunately, I couldn't find this in your documents.")).toBeTruthy()
-    expect(screen.getByRole('region', { name: 'Sources' })).toBeTruthy()
+    expect(await openSourcesPanel()).toBeTruthy() // the sources are still there
     expect(screen.queryByText(/Unverified/)).toBeNull() // a refusal is not "unverified"
   })
 
@@ -368,7 +381,7 @@ describe('notices about the answer', () => {
     await finishWith(doneEvent({ cited: [], uncited: true }, 'A claim with nothing behind it.'))
     expect(screen.getByText('Unverified: this answer cites no source')).toBeTruthy()
     expect(screen.getByText('A claim with nothing behind it.')).toBeTruthy() // the answer stays visible
-    expect(screen.getByRole('region', { name: 'Sources' })).toBeTruthy()
+    expect(await openSourcesPanel()).toBeTruthy()
     expect(screen.queryByText(/don't seem to contain an answer/)).toBeNull()
     expect(screen.queryByText(/don't match a source/)).toBeNull()
   })
@@ -377,6 +390,7 @@ describe('notices about the answer', () => {
     await finishWith(doneEvent({ cited: [1], invalid_citations: ['0', '7'] }, 'Claim [1] and [0] and [7].'))
     expect(screen.getByText("Some citation numbers don't match a source")).toBeTruthy()
     expect(screen.queryByText(/Unverified/)).toBeNull() // it does cite a real source
+    await openSourcesPanel()
     expect(screen.getByText('cited')).toBeTruthy() // source [1] is still marked as cited
   })
 
@@ -436,7 +450,7 @@ describe('when something goes wrong', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
     await waitFor(() => expect(askCalls).toHaveLength(2))
     expect(askCalls[1].body).toEqual({ question: 'How does a token bucket work?' })
-    expect(screen.getAllByText('How does a token bucket work?')).toHaveLength(1) // same turn, not a duplicate
+    expect(thread().getAllByText('How does a token bucket work?')).toHaveLength(1) // same turn, not a duplicate
     expect(screen.queryByRole('alert')).toBeNull()
     expect(await screen.findByText('Searching your documents...')).toBeTruthy()
 
