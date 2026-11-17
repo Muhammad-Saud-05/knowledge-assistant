@@ -21,3 +21,6 @@ eval/answers/
 .pytest_cache/
 web/.vite/
 *.egg-info/
+
+# Screenshots of the web app (local only)
+web/screenshots/

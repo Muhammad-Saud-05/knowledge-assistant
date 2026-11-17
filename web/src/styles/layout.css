@@ -1,0 +1,344 @@
+/* ---------- the shell: sidebar | main | sources panel ---------- */
+
+.shell {
+  display: flex;
+  height: 100dvh;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 3rem;
+  padding: var(--space-1) var(--space-3);
+}
+
+.topbar-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.view[hidden] {
+  display: none;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat {
+  min-width: 0;
+}
+
+/* ---------- sidebar ---------- */
+
+.sidebar {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--sidebar-width);
+  min-height: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar.collapsed {
+  display: none;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.app-name {
+  margin: 0;
+  padding-left: var(--space-1);
+  font-size: var(--text-base);
+  font-weight: 650;
+}
+
+.new-chat {
+  margin: var(--space-1) var(--space-3) var(--space-3);
+  justify-content: flex-start;
+}
+
+.conv-scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--space-2);
+  overflow-y: auto;
+}
+
+.conv-empty {
+  margin: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+
+.conv-group h2 {
+  margin: 0;
+  padding: var(--space-3) var(--space-2) var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.conv-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conv-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.conv-item:hover {
+  background: var(--surface);
+}
+
+.conv-item.active {
+  background: var(--surface-hover);
+}
+
+.conv-open {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-sm);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conv-delete {
+  width: 1.875rem;
+  height: 1.875rem;
+  margin-right: var(--space-1);
+  opacity: 0;
+}
+
+.conv-item:hover .conv-delete,
+.conv-item:focus-within .conv-delete {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .conv-delete {
+    opacity: 1;
+  }
+}
+
+.sidebar-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+.foot-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.foot-item:hover {
+  background: var(--surface-hover);
+}
+
+.foot-item[aria-current='page'] {
+  background: var(--surface-hover);
+  font-weight: 600;
+}
+
+.foot-note {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.foot-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.foot-confirm p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.sidebar-health {
+  padding: var(--space-1) var(--space-3);
+}
+
+.backdrop {
+  display: none;
+}
+
+/* ---------- sources panel (right column; a bottom sheet on phones) ---------- */
+
+.sources-panel {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--panel-width);
+  min-height: 0;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.panel-body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-3);
+  overflow-y: auto;
+}
+
+.panel-body ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sheet-backdrop {
+  display: none;
+}
+
+/* On tablets and small laptops the panel floats over the page (with a dimmed backdrop) instead of squeezing the chat. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .sources-panel {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 25;
+    width: min(24rem, 85vw);
+    box-shadow: -8px 0 24px rgb(0 0 0 / 0.18);
+  }
+
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 24;
+    display: block;
+    border: 0;
+    background: var(--overlay);
+  }
+}
+
+/* ---------- phones: the sidebar is a drawer and the panel a bottom sheet ---------- */
+
+@media (max-width: 767px) {
+  .sidebar,
+  .sidebar.collapsed {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    display: flex;
+    width: min(85vw, 20rem);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 200ms ease, visibility 200ms;
+  }
+
+  .sidebar.open {
+    transform: none;
+    visibility: visible;
+  }
+
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    border: 0;
+    background: var(--overlay);
+  }
+
+  .sources-panel {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 25;
+    width: 100%;
+    max-height: 72dvh;
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -8px 24px rgb(0 0 0 / 0.18);
+  }
+
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 24;
+    display: block;
+    border: 0;
+    background: var(--overlay);
+  }
+}

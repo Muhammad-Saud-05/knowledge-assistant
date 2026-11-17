@@ -1,0 +1,152 @@
+.documents-view {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.documents {
+  max-width: var(--thread-width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) var(--space-6);
+}
+
+.documents-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.documents-toolbar h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.dropzone.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.dropzone p {
+  margin: 0;
+}
+
+.documents .progress,
+.documents .notice,
+.documents .error {
+  margin-top: var(--space-3);
+}
+
+.table-scroll {
+  margin-top: var(--space-4);
+  overflow-x: auto;
+}
+
+.documents-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.documents-table th,
+.documents-table td {
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.documents-table th {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.doc-title {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.doc-file {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 12rem;
+}
+
+.confirm p {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.empty-documents {
+  margin-top: var(--space-6);
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+/* On a phone each document becomes a small card instead of a cramped table row. */
+@media (max-width: 600px) {
+  .documents-table,
+  .documents-table tbody,
+  .documents-table tr,
+  .documents-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .documents-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .documents-table tr {
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .documents-table td {
+    padding: 2px 0;
+    border: 0;
+  }
+
+  .documents-table td[data-label]::before {
+    content: attr(data-label) ': ';
+    color: var(--fg-muted);
+    font-size: var(--text-xs);
+  }
+
+  .documents-table td:last-child {
+    padding-top: var(--space-2);
+  }
+}
